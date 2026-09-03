@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pagos · HogarFix</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="/css/styles.css" rel="stylesheet">
+  <meta th:if="${_csrf != null}" name="_csrf" th:content="${_csrf.token}" />
+  <meta th:if="${_csrf != null}" name="_csrf_header" th:content="${_csrf.headerName}" />
+  <style>
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;margin:24px;background:#f8fafc;color:#0f172a}
+    .glass{background:rgba(255,255,255,0.9);backdrop-filter:blur(6px);border-radius:16px}
+    .spinner{border:3px solid rgba(0,0,0,0.06);border-top-color:var(--primary);border-radius:999px;width:14px;height:14px;animation:spin .9s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .method-active{box-shadow:0 6px 18px rgba(3,2,19,0.12);border-color:var(--primary) !important}
+    .text-danger{color:#dc2626}
+    .toast{position:fixed;right:20px;bottom:20px;background:#16a34a;color:white;padding:10px 14px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.12);display:flex;align-items:center;gap:8px}
+    @media (max-width: 640px) {
+      body { margin: 12px; }
+      .toast { left: 12px; right: 12px; bottom: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="max-w-6xl mx-auto grid gap-6 grid-cols-1 lg:grid-cols-3 items-start" th:with="pago=${#lists.isEmpty(pagos) ? null : pagos[0]}">
+    <!-- MAIN -->
+    <section class="lg:col-span-2 space-y-6">
+      <header class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-semibold text-slate-800">HogarFix · Pagos</h1>
+          <p class="text-sm text-slate-500 mt-1">Paga tu servicio</p>
+        </div>
+        <div class="text-right">
+          <div class="text-xs text-slate-500">Estado</div>
+          <div id="authStatus" class="text-sm font-medium text-amber-600">Autenticado</div>
+        </div>
+      </header>
+
+      <section class="glass p-6 bg-white rounded-lg shadow">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-800">Formulario de pago</h2>
+            <p class="text-sm text-slate-500 mt-1">
+            · Categoría: <strong id="svcCategory" th:text="${pago != null && pago.categoriaNombre != null ? pago.categoriaNombre : '—'}">Categoría</strong>
+            · Técnico: <strong id="svcTech" th:text="${pago != null && pago.tecnicoNombres != null ? (pago.tecnicoNombres + ' ' + pago.tecnicoApellidoPaterno) : '—'}">Técnico</strong></p>
+          </div>
+          <div class="text-right">
+            <div class="text-sm text-slate-500">Total</div>
+            <div id="svcCost" class="text-lg font-bold text-slate-800" th:text="${pago != null ? ('S/ ' + pago.monto) : 'S/ 0.00'}">S/ 0.00</div>
+            <div class="text-xs text-slate-400 mt-1">Fecha: <span id="svcDate" th:text="${pago != null && pago.servicioFechaFinalizacion != null ? #temporals.format(pago.servicioFechaFinalizacion,'dd/MM/yyyy') : ''}"></span></div>
+          </div>
+        </div>
+
+        <div class="mt-6 space-y-4">
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">Nombre del cliente</label>
+            <input id="clienteNombre" class="w-full p-3 rounded-md border border-slate-200 bg-slate-50" disabled th:value="${cliente != null ? cliente.nombres + ' ' + cliente.apellidoPaterno : ''}">
+          </div>
+
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">Monto a pagar</label>
+            <div class="w-full p-3 rounded-md border border-slate-200 bg-slate-50 font-semibold" th:text="${pago != null ? ('S/ ' + pago.monto) : 'S/ 0.00'}">S/ 0.00</div>
+          </div>
+
+          <!-- Caso: el cliente eligió pagar en EFECTIVO al solicitar el servicio -->
+          <div th:if="${pago != null and pago.metodoPago == 'efectivo' and pago.estado != 'PAGADO'}"
+               class="p-4 rounded-md text-sm" style="background:#e0f2fe; color:#075985;">
+            Elegiste pagar <strong>en efectivo</strong> directamente al técnico.
+            Cuando le entregues el dinero, confirma aquí para cerrar la solicitud.
+          </div>
+
+          <!-- Aviso cuando MercadoPago no está configurado todavía (solo aplica a pagos con tarjeta) -->
+          <div th:if="${!mpConfigurado and pago != null and pago.metodoPago != 'efectivo'}" class="p-4 rounded-md text-sm" style="background:#fef3c7; color:#92400e;">
+            La pasarela de pago (MercadoPago) todavía no está configurada. Contacta al administrador del sistema.
+          </div>
+
+          <div th:if="${mensajeError}" class="p-4 rounded-md text-sm" style="background:#fee2e2; color:#991b1b;">
+            <span th:text="${mensajeError}">Ocurrió un error</span>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+
+            <!-- Botón: confirmar pago en efectivo -->
+            <form th:if="${pago != null and pago.metodoPago == 'efectivo' and pago.estado != 'PAGADO'}"
+                  th:action="@{/pagos/{id}/confirmar-efectivo(id=${pago.idPago})}" method="post">
+              <button type="submit" class="btn-primary" style="background-color:#16a34a;">
+                Ya pagué en efectivo
+              </button>
+            </form>
+
+            <!-- Botón: pagar con MercadoPago (solo si el método NO es efectivo) -->
+            <a th:if="${pago != null and pago.metodoPago != 'efectivo' and mpConfigurado}"
+               th:href="@{/pagos/{id}/mp-iniciar(id=${pago.idPago})}"
+               class="btn-primary inline-block text-center"
+               style="background-color:#009EE3;">
+              Pagar con MercadoPago
+            </a>
+            <button th:if="${pago != null and pago.metodoPago != 'efectivo' and !mpConfigurado}"
+                    type="button" class="btn-primary" disabled style="opacity:.5;">
+              Pagar con MercadoPago
+            </button>
+
+            <span th:if="${pago != null and pago.metodoPago != 'efectivo'}" class="text-xs text-slate-400">
+              Ambiente de pruebas (sandbox) · No se cobra dinero real
+            </span>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- SIDE -->
+    <aside class="side-column lg:col-span-1 space-y-4">
+      <div class="glass p-4 bg-white rounded-lg shadow">
+        <h3 class="text-sm font-semibold text-slate-800">Panel rápido</h3>
+        <p class="text-xs text-slate-500 mt-1">Resumen del servicio seleccionado</p>
+        <div class="mt-3 space-y-2 text-sm">
+          <div><span class="text-slate-600">Servicio:</span> <strong id="sideSvc" th:text="${pago != null ? (pago.servicioDescripcion != null ? pago.servicioDescripcion : pago.categoriaNombre) : '—'}">—</strong></div>
+          <div><span class="text-slate-600">Costo:</span> <strong id="sideCost" th:text="${pago != null ? ('S/ ' + pago.monto) : 'S/ 0.00'}">S/ 0.00</strong></div>
+          <div><span class="text-slate-600">Fecha:</span> <strong id="sideDate" th:text="${pago != null && pago.servicioFechaFinalizacion != null ? #temporals.format(pago.servicioFechaFinalizacion,'dd/MM/yyyy') : ''}">—</strong></div>
+        </div>
+        <div class="mt-4">
+          <a href="/" class="w-full inline-block text-center px-3 py-2 rounded-md border border-slate-200 bg-white text-sm">Volver</a>
+        </div>
+      </div>
+    </aside>
+  </main>
+</body>
+</html>

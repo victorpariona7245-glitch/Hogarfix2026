@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Propiedades -->
+    <property name="LOG_FILE" value="logs/hogarfix.log"/>
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+    <property name="LOG_PATTERN_SIMPLE" value="%d{HH:mm:ss.SSS} [%-5level] %logger{0} - %msg%n"/>
+
+    <!-- Appender: Consola -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${LOG_PATTERN_SIMPLE}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- Appender: Archivo (hogarfix.log) -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE}</file>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/hogarfix.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- Appender: Errores (error.log) -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/error.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/error.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!-- Loggers específicos -->
+    
+    <!-- Logging para Cliente (controlador y servicio) -->
+    <logger name="com.hogarfix.controller.ClienteController" level="INFO"/>
+    <logger name="com.hogarfix.service.ClienteService" level="INFO"/>
+    
+    <!-- Logging para Técnico (controlador y servicio) -->
+    <logger name="com.hogarfix.controller.TecnicoController" level="INFO"/>
+    <logger name="com.hogarfix.service.TecnicoService" level="INFO"/>
+    
+    <!-- Logging para AuthController -->
+    <logger name="com.hogarfix.controller.AuthController" level="INFO"/>
+    
+    <!-- Logging para autenticación y seguridad -->
+    <logger name="org.springframework.security" level="WARN"/>
+    <logger name="com.hogarfix.config.SecurityConfig" level="INFO"/>
+    <logger name="com.hogarfix.config.ApplicationConfig" level="INFO"/>
+    <logger name="com.hogarfix.config.ApplicationStartupListener" level="INFO"/>
+    
+    <!-- Logging para Hibernate - SILENCIADO (demasiado verboso) -->
+    <logger name="org.hibernate" level="ERROR"/>
+    <logger name="org.hibernate.SQL" level="ERROR"/>
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="ERROR"/>
+    <logger name="org.hibernate.engine.transaction.internal.TransactionImpl" level="ERROR"/>
+    <logger name="org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl" level="ERROR"/>
+    <logger name="org.hibernate.engine.jdbc.internal.LogicalConnectionImpl" level="ERROR"/>
+    <logger name="org.hibernate.orm" level="ERROR"/>
+    <logger name="org.hibernate.engine" level="ERROR"/>
+    <logger name="org.hibernate.persister" level="ERROR"/>
+    
+    <!-- Logging para MySQL JDBC -->
+    <logger name="com.mysql.cj.jdbc.ConnectionImpl" level="WARN"/>
+    <logger name="com.mysql.cj" level="WARN"/>
+    
+    <!-- Logging para Spring Data JPA -->
+    <logger name="org.springframework.data" level="WARN"/>
+    <logger name="org.springframework.jdbc.datasource" level="WARN"/>
+    
+    <!-- Logging para Spring Boot -->
+    <logger name="org.springframework.boot" level="INFO"/>
+    <logger name="org.springframework.web" level="WARN"/>
+    <logger name="org.springframework" level="WARN"/>
+    
+    <!-- Silenciar logs de terceros innecesarios -->
+    <logger name="org.apache" level="WARN"/>
+    <logger name="org.springframework.data.repository.config.RepositoryConfigurationDelegate" level="WARN"/>
+    <logger name="org.springframework.boot.autoconfigure" level="WARN"/>
+    
+    <!-- Logger raíz -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </root>
+
+</configuration>

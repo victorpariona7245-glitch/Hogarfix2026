@@ -1,0 +1,182 @@
+:root {
+    --font-size: 14px;
+    --background: #ffffff;
+    --foreground: oklch(0.145 0 0);
+    --card: #ffffff;
+    --card-foreground: oklch(0.145 0 0);
+    --primary: #030213;
+    --primary-foreground: oklch(1 0 0);
+    --secondary: oklch(0.95 0.0058 264.53);
+    --secondary-foreground: #030213;
+    --muted: #ececf0;
+    --muted-foreground: #717182;
+    --accent: #e9ebef;
+    --accent-foreground: #030213;
+    --border: rgba(0, 0, 0, 0.1);
+    --radius: 0.625rem;
+    --destructive: #d4183d;
+}
+
+body {
+    font-size: var(--font-size);
+    background-color: var(--background);
+    color: var(--foreground);
+}
+
+.bg-primary { background-color: var(--primary); }
+.text-primary { color: var(--primary); }
+.bg-secondary { background-color: var(--secondary); }
+.text-muted-foreground { color: var(--muted-foreground); }
+.bg-muted { background-color: var(--muted); }
+.border-border { border-color: var(--border); }
+
+.btn-primary {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius);
+    font-weight: 500;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid var(--primary);
+}
+
+.btn-primary:hover { opacity: 0.9; color: var(--primary-foreground); }
+
+.btn-outline {
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    background: transparent;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius);
+    font-weight: 500;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-outline:hover { background-color: var(--primary); color: var(--primary-foreground); }
+
+.btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
+
+.btn-danger-outline {
+    border: 1px solid var(--destructive);
+    color: var(--destructive);
+    background: transparent;
+    padding: 0.6rem 1.25rem;
+    border-radius: var(--radius);
+    font-weight: 500;
+    transition: all 0.2s;
+}
+.btn-danger-outline:hover { background-color: var(--destructive); color: white; }
+
+.card {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+}
+
+.form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 0.65rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background-color: var(--background);
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(3, 2, 19, 0.08);
+}
+.form-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 0.35rem;
+    color: var(--foreground);
+}
+.form-hint { font-size: 0.75rem; color: var(--muted-foreground); margin-top: 0.25rem; }
+
+.badge-soft {
+    display: inline-block;
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+}
+
+.table-clean { width: 100%; font-size: 0.875rem; border-collapse: collapse; }
+.table-clean thead tr { border-bottom: 1px solid var(--border); text-align: left; color: var(--muted-foreground); }
+.table-clean th { padding: 0.6rem 0.75rem; font-weight: 500; }
+.table-clean td { padding: 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+.table-clean tbody tr:hover { background-color: var(--secondary); }
+
+.mobile-menu { display: none; }
+.mobile-menu.active { display: block; }
+@media (max-width: 768px) { .desktop-nav { display: none; } }
+
+.hero-gradient {
+    background: linear-gradient(135deg, var(--background) 0%, var(--secondary) 100%);
+}
+
+.auth-gradient {
+    background: linear-gradient(135deg, var(--background) 0%, var(--secondary) 60%, rgba(3,2,19,0.08) 100%);
+}
+
+/* ==========================================================
+   Responsividad general (móvil / tablet)
+   ========================================================== */
+
+/* Evita que el layout se desborde horizontalmente en pantallas
+   angostas (inputs, tablas o textos muy largos). */
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Ninguna imagen debe sobrepasar el ancho de su contenedor. */
+img { max-width: 100%; height: auto; }
+
+/* Grillas de 2 columnas usadas en los formularios de SweetAlert2
+   (editar perfil de cliente/técnico). Se colapsan a 1 columna en
+   pantallas angostas para que los campos no queden apretados. */
+.swal-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    text-align: left;
+}
+@media (max-width: 640px) {
+    .swal-form-grid {
+        grid-template-columns: 1fr;
+    }
+    .swal-form-grid .col-span-2 {
+        grid-column: auto;
+    }
+}
+
+/* Los popups de SweetAlert2 con ancho fijo (750px) se limitan al
+   viewport para no desbordar ni recortarse en móvil. */
+@media (max-width: 640px) {
+    .swal2-popup {
+        width: 92vw !important;
+        padding: 1rem !important;
+    }
+}
+
+/* Tarjetas y tablas: un poco menos de padding en móvil para
+   aprovechar mejor el espacio disponible. */
+@media (max-width: 640px) {
+    .card { padding: 1rem; }
+    .table-clean th, .table-clean td { padding: 0.5rem 0.6rem; }
+}
