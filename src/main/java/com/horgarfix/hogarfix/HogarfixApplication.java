@@ -1,4 +1,4 @@
-package com.horgarfix.hogarfix;
+package com.hogarfix.hogarfix;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
