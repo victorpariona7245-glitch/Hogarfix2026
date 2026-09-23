@@ -1,4 +1,4 @@
-package com.horgarfix.hogarfix;
+package com.hogarfix.hogarfix;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
