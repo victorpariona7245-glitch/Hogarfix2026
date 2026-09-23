@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Panel Técnico | HogarFix</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="/css/styles.css" rel="stylesheet" />
+    <style>
+      body { font-family: "Inter", sans-serif; }
+      .swal-label {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        display: block;
+      }
+
+      .swal-input-modern {
+        width: 100%;
+        padding: 9px 11px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+
+      .swal-input-modern:focus {
+        border-color: var(--primary);
+        background: white;
+      }
+
+      .swal-input-modern-file {
+        width: 100%;
+        margin-top: 4px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body style="background-color: rgba(236,236,240,0.3);">
+    <!-- Simple header (brand + logout) -->
+    <header class="w-full bg-white border-b sticky top-0 z-50" style="border-color: var(--border);">
+      <div
+        class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between"
+      >
+        <a href="/" class="text-2xl font-medium text-primary">HogarFix</a>
+        <div class="flex items-center space-x-3">
+          <form th:action="@{/logout}" method="post">
+            <button
+              type="submit"
+              class="btn-outline btn-sm"
+            >
+              Cerrar sesión
+            </button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <main
+      class="max-w-7xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6 mt-4"
+    >
+      <div class="space-y-6">
+      <section class="card rounded-2xl">
+        <div class="flex flex-col items-center">
+          <img
+            th:src="${tecnicoFotoNombre != null} ? @{/tecnicos/fotos/{name}(name=${tecnicoFotoNombre})} : 'https://cdn-icons-png.flaticon.com/512/2922/2922510.png'"
+            alt="Foto Técnico"
+            class="w-24 h-24 rounded-full mb-3 object-cover"
+          />
+          <h2
+            class="text-lg font-medium"
+            th:text="${tecnico.nombres + ' ' + tecnico.apellidoPaterno}"
+          >
+            Nombre Técnico
+          </h2>
+          <p class="text-sm" style="color: var(--muted-foreground);" th:text="${tecnico.dni}">
+            <strong>Dni:</strong>DNI
+          </p>
+
+          <!-- Interruptor de disponibilidad -->
+          <form th:action="@{/tecnicos/disponibilidad}" method="post" class="mt-3 w-full">
+            <input type="hidden" name="disponible"
+                   th:value="${tecnico.disponible != null and tecnico.disponible} ? 'false' : 'true'" />
+            <button type="submit"
+                    class="w-full flex items-center justify-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium"
+                    th:classappend="${tecnico.disponible != null and tecnico.disponible}
+                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'">
+              <span class="inline-block w-2 h-2 rounded-full"
+                    th:classappend="${tecnico.disponible != null and tecnico.disponible} ? 'bg-green-500' : 'bg-gray-400'"></span>
+              <span th:text="${tecnico.disponible != null and tecnico.disponible} ? 'Disponible' : 'No disponible'">Disponible</span>
+            </button>
+          </form>
+
+          <!-- Especialidad / Categoría seleccionada -->
+          <p class="text-gray-700 text-sm mt-2">
+            <strong>Especialidades:</strong>
+
+            <span th:if="${#lists.isEmpty(tecnico.categorias)}"
+              >Sin especificar</span
+            >
+
+            <span
+              th:each="cat : ${tecnico.categorias}"
+              class="badge-soft mr-1 mt-1"
+            >
+              <span th:text="${cat.categoria.nombre}">Categoría</span>
+            </span>
+          </p>
+        </div>
+
+        <div class="mt-4 space-y-2 text-sm" style="color: var(--muted-foreground);">
+          <p>
+            <i data-lucide="mail" class="inline w-4 h-4"></i>
+            <span th:text="${tecnico.usuario.email}">email@ejemplo.com</span>
+          </p>
+          <p>
+            <i data-lucide="phone" class="inline w-4 h-4"></i>
+            <span th:text="${tecnico.telefono}">+51 9xx xxx xxx</span>
+          </p>
+          <p>
+            <i data-lucide="map-pin" class="inline w-4 h-4"></i>
+            <span
+              th:text="${tecnico.direccion.calle + ' ' + tecnico.direccion.numero}"
+              >Calle y numero</span
+            >,
+            <span th:text="${tecnico.direccion.ciudad.nombre}">Ciudad</span>
+          </p>
+          <p th:if="${tecnico.direccion.referencia != null}">
+            <i data-lucide="map-pin" class="inline w-4 h-4"></i>
+            <span th:text="${tecnico.direccion.referencia}">Referencia</span>
+          </p>
+
+          <p>
+            <i data-lucide="user-cog" class="inline w-4 h-4"></i>
+            <button
+              type="button"
+              onclick="abrirFormularioPerfil()"
+              class="text-primary hover:underline bg-transparent border-none cursor-pointer font-medium"
+            >
+              Modificar perfil
+            </button>
+          </p>
+        </div>
+      </section>
+
+      <!-- Resumen de ganancias -->
+      <section class="card rounded-2xl">
+        <h3 class="text-sm font-medium mb-3" style="color: var(--muted-foreground);">Este mes</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="text-center p-3 rounded-xl" style="background:#f0fdf4;">
+            <p class="text-2xl font-bold" style="color:#166534;" th:text="${'S/ ' + #numbers.formatDecimal(gananciasMes, 1, 2)}">S/ 0.00</p>
+            <p class="text-xs mt-1" style="color: var(--muted-foreground);">Total ganado</p>
+          </div>
+          <div class="text-center p-3 rounded-xl" style="background:#eff6ff;">
+            <p class="text-2xl font-bold" style="color:#1e40af;" th:text="${serviciosCompletados}">0</p>
+            <p class="text-xs mt-1" style="color: var(--muted-foreground);">Servicios completados</p>
+          </div>
+        </div>
+      </section>
+      </div>
+
+      <section class="md:col-span-2 card rounded-2xl">
+        <div class="flex flex-wrap items-start justify-between gap-4 mb-1">
+          <div>
+            <h3 class="text-lg font-medium mb-1">Información profesional</h3>
+            <p class="text-sm" style="color: var(--muted-foreground);">
+              Detalles y registros relacionados con tu cuenta técnica.
+            </p>
+          </div>
+          <button
+            type="button"
+            onclick="abrirFormularioPerfil()"
+            class="btn-primary btn-sm whitespace-nowrap"
+          >
+            Actualizar certificado
+          </button>
+        </div>
+
+        <!-- Placeholder: detalles adicionales del técnico (aún no definidos en la entidad) -->
+        <div class="space-y-4 text-sm">
+          <!-- Vista previa del certificado -->
+          <div th:if="${tecnico.certificadoPdf != null}">
+            <h4 class="text-md font-semibold mb-3">Certificado profesional</h4>
+
+            <div class="flex items-center gap-4 p-4 rounded-xl border"
+                 style="border-color: var(--border); background: #f8fafc;">
+              <div class="flex items-center justify-center rounded-lg flex-shrink-0"
+                   style="width:56px; height:56px; background:#fee2e2;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
+                     fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <path d="M14 2v6h6" />
+                  <path d="M9 15h6" />
+                  <path d="M9 11h6" />
+                </svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-medium truncate">Certificado profesional</p>
+                <p class="text-xs" style="color: var(--muted-foreground);">Documento PDF</p>
+              </div>
+              <a
+                th:href="@{/tecnicos/certificados/{nombre}(nombre=${tecnico.certificadoPdf.substring(tecnico.certificadoPdf.lastIndexOf('/') + 1)})}"
+                target="_blank"
+                class="btn-outline btn-sm whitespace-nowrap flex items-center gap-1.5"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M15 3h6v6" />
+                  <path d="M10 14 21 3" />
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                </svg>
+                Ver certificado
+              </a>
+            </div>
+          </div>
+
+          <!-- Cuando NO hay certificado -->
+          <div th:if="${tecnico.certificadoPdf == null}">
+            <p style="color: var(--muted-foreground);">
+              Aún no has subido tu certificado profesional.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <h4 class="text-lg font-medium mb-3">Mis solicitudes</h4>
+          <div
+            th:if="${#lists.isEmpty(servicios)}"
+            class="text-sm"
+            style="color: var(--muted-foreground);"
+          >
+            No tienes solicitudes asignadas todavía.
+          </div>
+          <div th:if="${!#lists.isEmpty(servicios)}" class="overflow-x-auto">
+          <table
+            class="table-clean"
+            id="tabla-mis-solicitudes"
+          >
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Cliente / Contacto</th>
+                <th>Descripción</th>
+                <th>Urgencia</th>
+                <th>Pago</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!--
+                's' queda en scope para toda la fila (incluido el botón de
+                chat, que abre el widget flotante definido al final de la
+                página).
+              -->
+              <tr class="fila-servicio" th:each="s : ${servicios}">
+                  <td
+                    th:text="${#temporals.format(s.fechaSolicitud, 'dd/MM/yyyy HH:mm')}"
+                  >
+                    01/01/2024
+                  </td>
+                  <td>
+                    <div
+                      th:text="${s.cliente != null ? s.cliente.nombres + ' ' + s.cliente.apellidoPaterno : 'Cliente'}"
+                    >
+                      Cliente
+                    </div>
+                    <div style="color: var(--muted-foreground); font-size: 0.85em;">
+                      <span th:if="${s.telefono != null}" th:text="${'Tel: ' + s.telefono}">Tel: 999999999</span><br
+                        th:if="${s.telefono != null and s.direccionServicio != null}" />
+                      <span th:if="${s.direccionServicio != null}" th:text="${'Dirección: ' + s.direccionServicio}">Dirección</span>
+                    </div>
+                  </td>
+                  <td th:text="${s.descripcion}">Descripción</td>
+                  <td th:text="${s.urgencia != null ? s.urgencia : '-'}">media</td>
+                  <td>
+                    <span th:if="${s.metodoPagoPreferido == 'efectivo'}" class="badge-soft" style="background:#dcfce7; color:#166534;">Efectivo</span>
+                    <span th:if="${s.metodoPagoPreferido != 'efectivo'}" class="badge-soft" style="background:#dbeafe; color:#1e40af;">Tarjeta</span>
+                    <div th:if="${s.estado == 'FINALIZADO'}" style="margin-top:4px;">
+                      <span th:if="${pagoEstados.get(s.idServicio) == 'PAGADO'}" class="badge-soft" style="background:#dcfce7; color:#166534; font-size:0.75em;">✓ Pagado</span>
+                      <span th:unless="${pagoEstados.get(s.idServicio) == 'PAGADO'}" class="badge-soft" style="background:#fef3c7; color:#92400e; font-size:0.75em;">Pago pendiente</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="mb-2">
+                      <span class="badge-soft" th:text="${s.estado}">PENDIENTE</span>
+                    </div>
+
+                    <!-- Acciones según estado -->
+                    <div th:switch="${s.estado}">
+                      <div th:case="'PENDIENTE'">
+                        <form
+                          th:action="@{/servicios/{id}/aceptar(id=${s.idServicio})}"
+                          method="post"
+                          style="display: inline"
+                        >
+                          <input
+                            type="hidden"
+                            th:if="${_csrf != null}"
+                            th:name="${_csrf.parameterName}"
+                            th:value="${_csrf.token}"
+                          />
+                          <button
+                            type="submit"
+                            class="px-2 py-1 rounded text-white text-xs font-medium"
+                            style="background-color:#16a34a;"
+                          >
+                            Aceptar
+                          </button>
+                        </form>
+                        <form
+                          th:action="@{/servicios/{id}/cancelar(id=${s.idServicio})}"
+                          method="post"
+                          style="display: inline; margin-left: 6px"
+                        >
+                          <input
+                            type="hidden"
+                            th:if="${_csrf != null}"
+                            th:name="${_csrf.parameterName}"
+                            th:value="${_csrf.token}"
+                          />
+                          <button
+                            type="submit"
+                            class="px-2 py-1 rounded text-white text-xs font-medium"
+                            style="background-color:#dc2626;"
+                          >
+                            Rechazar
+                          </button>
+                        </form>
+                      </div>
+                      <div th:case="'EN_PROCESO'">
+                        <form
+                          th:action="@{/servicios/{id}/finalizar(id=${s.idServicio})}"
+                          method="post"
+                          style="display: inline"
+                        >
+                          <input
+                            type="hidden"
+                            th:if="${_csrf != null}"
+                            th:name="${_csrf.parameterName}"
+                            th:value="${_csrf.token}"
+                          />
+                          <button
+                            type="submit"
+                            class="px-2 py-1 rounded text-white text-xs font-medium"
+                            style="background-color: var(--primary);"
+                          >
+                            Terminar
+                          </button>
+                        </form>
+                        <button
+                          type="button"
+                          class="px-2 py-1 rounded text-xs font-medium border chat-trigger"
+                          style="margin-top:4px; border-color: var(--border);"
+                          th:attr="data-servicio-id=${s.idServicio}"
+                          th:data-nombre="${s.cliente != null ? s.cliente.nombres + (s.cliente.apellidoPaterno != null ? ' ' + s.cliente.apellidoPaterno : '') : 'Cliente'}"
+                          onclick="abrirChatFlotante(this.dataset.servicioId, this.dataset.nombre)"
+                        >
+                          💬 Chat
+                        </button>
+                      </div>
+                      <div th:case="*">
+                        <!-- otros estados: solo mostrar etiqueta -->
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+            </tbody>
+          </table>
+          </div>
+
+          <!-- Controles de paginación -->
+          <div th:if="${!#lists.isEmpty(servicios)}" class="flex flex-wrap items-center justify-between gap-2 mt-4 text-sm">
+            <span id="paginacion-info" style="color: var(--muted-foreground);"></span>
+            <div class="flex items-center gap-2">
+              <button type="button" id="paginacion-prev" class="btn-outline btn-sm" onclick="cambiarPagina(-1)">
+                &larr; Anterior
+              </button>
+              <span id="paginacion-actual" class="text-sm font-medium"></span>
+              <button type="button" id="paginacion-next" class="btn-outline btn-sm" onclick="cambiarPagina(1)">
+                Siguiente &rarr;
+              </button>
+            </div>
+          </div>
+
+          <script>
+            (function () {
+              const FILAS_POR_PAGINA = 5;
+              let paginaActual = 1;
+
+              function inicializarPaginacion() {
+                const tabla = document.getElementById('tabla-mis-solicitudes');
+                if (!tabla) return;
+                // Solo contamos las filas de servicio; la fila de chat (si existe)
+                // sigue inmediatamente a su fila de servicio y se oculta/muestra junto con ella.
+                const filas = Array.from(tabla.querySelectorAll('tbody tr.fila-servicio'));
+                const totalPaginas = Math.max(1, Math.ceil(filas.length / FILAS_POR_PAGINA));
+
+                function render() {
+                  const inicio = (paginaActual - 1) * FILAS_POR_PAGINA;
+                  const fin = inicio + FILAS_POR_PAGINA;
+                  filas.forEach((fila, i) => {
+                    const visible = i >= inicio && i < fin;
+                    fila.style.display = visible ? '' : 'none';
+                  });
+
+                  document.getElementById('paginacion-info').textContent =
+                    'Mostrando ' + (Math.min(inicio + 1, filas.length)) + '–' + Math.min(fin, filas.length) +
+                    ' de ' + filas.length + ' solicitudes';
+                  document.getElementById('paginacion-actual').textContent =
+                    'Página ' + paginaActual + ' de ' + totalPaginas;
+                  document.getElementById('paginacion-prev').disabled = paginaActual === 1;
+                  document.getElementById('paginacion-next').disabled = paginaActual === totalPaginas;
+                  document.getElementById('paginacion-prev').style.opacity = paginaActual === 1 ? '0.5' : '1';
+                  document.getElementById('paginacion-next').style.opacity = paginaActual === totalPaginas ? '0.5' : '1';
+                }
+
+                window.cambiarPagina = function (delta) {
+                  const nueva = paginaActual + delta;
+                  if (nueva < 1 || nueva > totalPaginas) return;
+                  paginaActual = nueva;
+                  render();
+                };
+
+                render();
+              }
+
+              if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', inicializarPaginacion);
+              } else {
+                inicializarPaginacion();
+              }
+            })();
+          </script>
+        </div>
+      </section>
+      <!-- HTML oculto: SELECT de categorías procesado por Thymeleaf -->
+      <div id="selectCategoriasHtml" style="display: none">
+        <option
+          th:each="cat : ${categorias}"
+          th:value="${cat.idCategoria}"
+          th:text="${cat.nombre}"
+          th:selected="${tecnico.categorias != null and tecnico.categorias.contains(cat)}"
+        ></option>
+      </div>
+    </main>
+
+    <script>
+      function abrirFormularioPerfil() {
+        Swal.fire({
+          title: "Editar perfil",
+          width: "min(750px, 92vw)",
+          showCancelButton: true,
+          confirmButtonText: "Guardar cambios",
+          cancelButtonText: "Cancelar",
+          customClass: {
+            popup: "rounded-xl",
+            title: "text-2xl font-semibold mb-3",
+            confirmButton: "px-5 py-2 rounded text-white",
+            cancelButton: "bg-gray-400 px-5 py-2 rounded text-white",
+          },
+          didOpen: () => {
+            const confirmBtn = Swal.getConfirmButton();
+            if (confirmBtn) confirmBtn.style.backgroundColor = "#030213";
+          },
+          html: `
+      <div class="swal-form-grid">
+      
+      <div class="col-span-2">
+        <label class="swal-label">Nombres Completos</label>
+        <input id="nombres" class="swal-input-modern" value="[[${
+          tecnico.nombres
+        }]]">
+      </div>
+
+      <div>
+        <label class="swal-label">Apellido Paterno</label>
+        <input id="apellidoPaterno" class="swal-input-modern" value="[[${
+          tecnico.apellidoPaterno
+        }]]">
+      </div>
+
+      <div>
+        <label class="swal-label">Apellido Materno</label>
+        <input id="apellidoMaterno" class="swal-input-modern" value="[[${
+          tecnico.apellidoMaterno
+        }]]">
+      </div>
+
+      <div>
+        <label class="swal-label">Teléfono</label>
+        <input id="telefono" class="swal-input-modern" value="[[${
+          tecnico.telefono
+        }]]">
+      </div>
+
+      <div>
+        <label class="swal-label">Correo Electrónico</label>
+        <input id="correo" class="swal-input-modern" value="[[${
+          tecnico.usuario.email
+        }]]">
+      </div>
+
+      <div class="col-span-2">
+        <label class="swal-label">Categorías</label>
+        <select id="categoriasSelectSwal" class="swal-input-modern" multiple style="height: 130px;">
+          ${document.getElementById("selectCategoriasHtml").innerHTML}
+        </select>
+      </div>
+
+      <div>
+        <label class="swal-label">Certificado (PDF)</label>
+        <input type="file" id="certificadoPdf" class="swal-input-modern-file" accept="application/pdf">
+      </div>
+
+      <div>
+        <label class="swal-label">Foto de perfil</label>
+        <input type="file" id="fotoPerfil" class="swal-input-modern-file" accept="image/png, image/jpeg">
+      </div>
+
+    </div>
+    `,
+          preConfirm: async () => {
+            const nombres = document.getElementById("nombres").value.trim();
+            const apellidoPaterno = document
+              .getElementById("apellidoPaterno")
+              .value.trim();
+            const apellidoMaterno = document
+              .getElementById("apellidoMaterno")
+              .value.trim();
+            const telefono = document.getElementById("telefono").value.trim();
+            const correo = document.getElementById("correo").value.trim();
+
+            // Expresiones Regulares
+            const soloLetras = /^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/;
+            const soloNumeros = /^[0-9]+$/;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            // Validaciones
+            if (!soloLetras.test(nombres)) {
+              Swal.showValidationMessage(
+                "El campo Nombres solo debe contener letras."
+              );
+              return false;
+            }
+            if (!soloLetras.test(apellidoPaterno)) {
+              Swal.showValidationMessage(
+                "El Apellido Paterno solo debe contener letras."
+              );
+              return false;
+            }
+            if (!soloLetras.test(apellidoMaterno)) {
+              Swal.showValidationMessage(
+                "El Apellido Materno solo debe contener letras."
+              );
+              return false;
+            }
+            if (!soloNumeros.test(telefono)) {
+              Swal.showValidationMessage(
+                "El Teléfono solo debe contener números."
+              );
+              return false;
+            }
+            if (!emailRegex.test(correo)) {
+              Swal.showValidationMessage(
+                "El correo electrónico no tiene un formato válido."
+              );
+              return false;
+            }
+
+            const formData = new FormData();
+
+            formData.append(
+              "nombres",
+              document.getElementById("nombres").value
+            );
+            formData.append(
+              "apellidoPaterno",
+              document.getElementById("apellidoPaterno").value
+            );
+            formData.append(
+              "apellidoMaterno",
+              document.getElementById("apellidoMaterno").value
+            );
+            formData.append(
+              "telefono",
+              document.getElementById("telefono").value
+            );
+            formData.append("correo", document.getElementById("correo").value);
+
+            const categorias = Array.from(
+              document.querySelector("#categoriasSelectSwal").selectedOptions
+            ).map((opt) => opt.value);
+
+            categorias.forEach((id) => formData.append("categoriaIds", id));
+
+            const pdf = document.getElementById("certificadoPdf").files[0];
+            const foto = document.getElementById("fotoPerfil").files[0];
+
+            if (pdf) formData.append("certificadoPdfFile", pdf);
+            if (foto) formData.append("fotoPerfilFile", foto);
+
+            const response = await fetch("/tecnicos/perfil/actualizar", {
+              method: "POST",
+              body: formData,
+            });
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              Swal.showValidationMessage(
+                "Error al actualizar perfil: " + errorText
+              );
+              return false;
+            }
+
+            return true;
+          },
+        }).then((result) => {
+          if (result.isConfirmed) {
+            Swal.fire({
+              title: "Perfil actualizado correctamente",
+              icon: "success",
+              draggable: true,
+            }).then(() => location.reload());
+          }
+        });
+      }
+    </script>
+
+    <script>
+      lucide.createIcons();
+    </script>
+  <script>
+    // --- Chat flotante técnico ↔ cliente (polling cada 4 segundos) ---
+    let chatActivoId = null;
+    let chatIntervalo = null;
+
+    function escapeHtml(texto) {
+      const div = document.createElement('div');
+      div.textContent = texto;
+      return div.innerHTML;
+    }
+
+    function renderMensajesFlotante(mensajes) {
+      const contenedor = document.getElementById('chat-widget-mensajes');
+      if (!contenedor) return;
+      if (!mensajes.length) {
+        contenedor.innerHTML = '<p style="font-size:12px; color:#94a3b8; text-align:center; margin-top:16px;">Aún no hay mensajes. ¡Escribe el primero!</p>';
+        return;
+      }
+      contenedor.innerHTML = mensajes.map(m => {
+        const esMio = m.autor === 'TECNICO';
+        const alineacion = esMio ? 'justify-content:flex-end;' : 'justify-content:flex-start;';
+        const color = esMio ? 'background:#030213; color:#fff;' : 'background:#e5e7eb; color:#111;';
+        return '<div style="display:flex; ' + alineacion + ' margin-bottom:6px;">' +
+          '<div style="max-width:75%; padding:6px 10px; border-radius:10px; font-size:13px; ' + color + '">' +
+          escapeHtml(m.contenido) +
+          '<div style="font-size:10px; opacity:0.7; margin-top:2px;">' + m.fecha + '</div>' +
+          '</div></div>';
+      }).join('');
+      contenedor.scrollTop = contenedor.scrollHeight;
+    }
+
+    async function cargarMensajesFlotante() {
+      if (!chatActivoId) return;
+      try {
+        const res = await fetch('/api/mensajes/' + chatActivoId, { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const mensajes = await res.json();
+        renderMensajesFlotante(mensajes);
+      } catch (e) {
+        console.warn('No se pudo cargar el chat:', e);
+      }
+    }
+
+    function abrirChatFlotante(idServicio, nombreContacto) {
+      chatActivoId = idServicio;
+      document.getElementById('chat-widget-titulo').textContent = nombreContacto || 'Chat';
+      document.getElementById('chat-widget-mensajes').innerHTML = '';
+      document.getElementById('chat-widget-panel').classList.remove('hidden');
+      document.getElementById('chat-widget-burbuja').classList.add('hidden');
+      cargarMensajesFlotante();
+
+      if (chatIntervalo) clearInterval(chatIntervalo);
+      chatIntervalo = setInterval(cargarMensajesFlotante, 4000);
+
+      document.getElementById('chat-widget-input').focus();
+    }
+
+    function minimizarChatFlotante() {
+      document.getElementById('chat-widget-panel').classList.add('hidden');
+      document.getElementById('chat-widget-burbuja').classList.remove('hidden');
+    }
+
+    function toggleChatFlotante() {
+      const panel = document.getElementById('chat-widget-panel');
+      if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        document.getElementById('chat-widget-burbuja').classList.add('hidden');
+        if (chatActivoId) cargarMensajesFlotante();
+      } else {
+        minimizarChatFlotante();
+      }
+    }
+
+    async function enviarMensajeChatFlotante() {
+      if (!chatActivoId) return;
+      const input = document.getElementById('chat-widget-input');
+      const contenido = input.value.trim();
+      if (!contenido) return;
+
+      try {
+        const res = await fetch('/api/mensajes/' + chatActivoId, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ contenido }),
+        });
+        if (res.ok) {
+          input.value = '';
+          cargarMensajesFlotante();
+        }
+      } catch (e) {
+        console.warn('No se pudo enviar el mensaje:', e);
+      }
+    }
+
+    document.getElementById('chat-widget-input')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        enviarMensajeChatFlotante();
+      }
+    });
+  </script>
+
+  <!-- Widget de chat flotante -->
+  <div id="chat-widget" class="fixed bottom-5 right-5 z-50 flex flex-col items-end">
+    <div id="chat-widget-panel" class="hidden mb-3 w-80 max-w-[88vw] bg-white rounded-2xl shadow-xl border overflow-hidden" style="border-color: var(--border);">
+      <div class="flex items-center justify-between px-4 py-3" style="background: var(--primary); color: var(--primary-foreground);">
+        <p class="font-medium text-sm truncate" id="chat-widget-titulo">Chat</p>
+        <button type="button" onclick="minimizarChatFlotante()" class="p-1 hover:opacity-80" aria-label="Minimizar chat">
+          <i data-lucide="minus" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div id="chat-widget-mensajes" class="p-3 overflow-y-auto" style="height: 300px; background:#f8fafc;"></div>
+      <div class="flex gap-2 p-3 border-t" style="border-color: var(--border);">
+        <input type="text" id="chat-widget-input"
+               placeholder="Escribe un mensaje..."
+               class="flex-1 border rounded-lg p-2 text-sm" style="border-color: var(--border);" />
+        <button type="button" class="btn-primary btn-sm" onclick="enviarMensajeChatFlotante()">
+          Enviar
+        </button>
+      </div>
+    </div>
+
+    <button type="button" id="chat-widget-burbuja" onclick="toggleChatFlotante()"
+            class="hidden rounded-full shadow-lg items-center justify-center"
+            style="width:56px; height:56px; background: var(--primary); color: var(--primary-foreground); display:flex;">
+      <i data-lucide="message-circle" class="w-6 h-6"></i>
+    </button>
+  </div>
+  </body>
+</html>

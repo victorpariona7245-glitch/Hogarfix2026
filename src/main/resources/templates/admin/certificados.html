@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Certificados pendientes')}"></head>
+<body class="bg-muted/20" style="background-color: rgba(236,236,240,0.25);">
+  <header th:replace="~{fragments/navbar :: navbar}"></header>
+
+  <div class="min-h-screen flex flex-col">
+    <main class="flex-1 container mx-auto px-4 py-10">
+      <h2 class="text-2xl font-medium mb-1">Certificados pendientes de revisión</h2>
+      <p class="text-sm mb-6" style="color: var(--muted-foreground);">
+        Revisa el certificado profesional de cada técnico antes de habilitar su cuenta.
+      </p>
+
+      <div th:if="${mensajeExito}" class="text-sm mb-4 p-3 rounded-lg" style="background:#dcfce7; color:#166534;">
+        <span th:text="${mensajeExito}">Cuenta actualizada</span>
+      </div>
+      <div th:if="${mensajeError}" class="text-sm mb-4 p-3 rounded-lg" style="background:#fee2e2; color:#991b1b;">
+        <span th:text="${mensajeError}">Ocurrió un error</span>
+      </div>
+
+      <div th:if="${not #lists.isEmpty(tecnicos)}">
+        <div class="mb-4 max-w-sm">
+          <input
+            type="text"
+            id="buscar-tecnico"
+            placeholder="Buscar por nombre, email, DNI, especialidad..."
+            class="w-full border rounded-lg p-2 text-sm"
+            style="border-color: var(--border);"
+          />
+        </div>
+
+        <div class="card overflow-x-auto p-0">
+          <table class="table-clean" id="tabla-tecnicos">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre completo</th>
+                <th>Especialidad</th>
+                <th>Email</th>
+                <th>Teléfono</th>
+                <th>DNI</th>
+                <th>Ciudad</th>
+                <th>Certificado</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="tecnico : ${tecnicos}">
+                <td th:text="${tecnico.idTecnico}">-</td>
+                <td>
+                  <span th:text="${tecnico.nombres ?: 'N/A'}"></span>
+                  <span th:if="${tecnico.apellidoPaterno}" th:text="${' ' + tecnico.apellidoPaterno}"></span>
+                  <span th:if="${tecnico.apellidoMaterno}" th:text="${' ' + tecnico.apellidoMaterno}"></span>
+                </td>
+                <td>
+                  <span th:if="${tecnico.categorias == null or tecnico.categorias.size() == 0}">N/A</span>
+                  <span th:each="cat : ${tecnico.categorias}" class="badge-soft mr-1" th:text="${cat.categoria?.nombre ?: 'N/A'}">N/A</span>
+                </td>
+                <td th:text="${tecnico.usuario?.email ?: 'N/A'}">-</td>
+                <td th:text="${tecnico.telefono ?: 'N/A'}">-</td>
+                <td th:text="${tecnico.dni ?: 'N/A'}">-</td>
+                <td th:text="${tecnico.direccion?.ciudad?.nombre ?: 'N/A'}">-</td>
+                <td>
+                  <a th:if="${tecnico.certificadoPdf != null}"
+                     th:href="@{/tecnicos/certificados/{nombre}(nombre=${tecnico.certificadoPdf.substring(tecnico.certificadoPdf.lastIndexOf('/') + 1)})}"
+                     target="_blank" class="text-primary hover:underline font-medium">📄 Ver certificado</a>
+                  <span th:if="${tecnico.certificadoPdf == null}" class="text-sm" style="color: var(--muted-foreground);">Sin certificado</span>
+                </td>
+                <td>
+                  <form th:action="@{/admin/tecnicos/{id}/habilitar(id=${tecnico.idTecnico})}" method="post">
+                    <button type="submit" class="btn-primary btn-sm">Habilitar</button>
+                  </form>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p id="sin-resultados-tecnico" class="hidden text-sm p-4" style="color: var(--muted-foreground);">
+            No se encontraron técnicos que coincidan con la búsqueda.
+          </p>
+        </div>
+
+        <!-- Controles de paginación -->
+        <div class="flex items-center justify-between mt-4 text-sm">
+          <span id="tabla-tecnicos-info" style="color: var(--muted-foreground);"></span>
+          <div class="flex items-center gap-2">
+            <button type="button" id="tabla-tecnicos-prev" class="btn-outline btn-sm" onclick="cambiarPagina(-1)">← Anterior</button>
+            <span id="tabla-tecnicos-pagina" class="text-sm font-medium"></span>
+            <button type="button" id="tabla-tecnicos-next" class="btn-outline btn-sm" onclick="cambiarPagina(1)">Siguiente →</button>
+          </div>
+        </div>
+      </div>
+      <div th:if="${#lists.isEmpty(tecnicos)}" class="card text-sm text-center" style="color: var(--muted-foreground);">
+        🎉 No hay certificados pendientes de revisión.
+      </div>
+
+      <a th:href="@{/admin/dashboard}" class="btn-outline mt-6 inline-block">Volver</a>
+
+      <script>
+        const FILAS_POR_PAGINA = 10;
+        let paginaActual = 1;
+        const inputBusqueda = document.getElementById('buscar-tecnico');
+        const tabla = document.getElementById('tabla-tecnicos');
+        const filas = tabla ? Array.from(tabla.querySelectorAll('tbody tr')) : [];
+
+        function aplicarFiltroPaginacion() {
+          const filtro = (inputBusqueda?.value || '').trim().toLowerCase();
+          const coincidentes = filas.filter((fila) => fila.textContent.toLowerCase().includes(filtro));
+          const totalPaginas = Math.max(1, Math.ceil(coincidentes.length / FILAS_POR_PAGINA));
+          if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+
+          const inicio = (paginaActual - 1) * FILAS_POR_PAGINA;
+          const fin = inicio + FILAS_POR_PAGINA;
+
+          filas.forEach((fila) => {
+            const idx = coincidentes.indexOf(fila);
+            const visible = idx !== -1 && idx >= inicio && idx < fin;
+            fila.style.display = visible ? '' : 'none';
+          });
+
+          const mensaje = document.getElementById('sin-resultados-tecnico');
+          if (mensaje) mensaje.classList.toggle('hidden', coincidentes.length !== 0);
+
+          const desde = coincidentes.length === 0 ? 0 : inicio + 1;
+          const hasta = Math.min(fin, coincidentes.length);
+          document.getElementById('tabla-tecnicos-info').textContent =
+            'Mostrando ' + desde + '–' + hasta + ' de ' + coincidentes.length;
+          document.getElementById('tabla-tecnicos-pagina').textContent =
+            'Página ' + paginaActual + ' de ' + totalPaginas;
+
+          const prevBtn = document.getElementById('tabla-tecnicos-prev');
+          const nextBtn = document.getElementById('tabla-tecnicos-next');
+          prevBtn.disabled = paginaActual === 1;
+          nextBtn.disabled = paginaActual === totalPaginas;
+          prevBtn.style.opacity = paginaActual === 1 ? '0.5' : '1';
+          nextBtn.style.opacity = paginaActual === totalPaginas ? '0.5' : '1';
+        }
+
+        function cambiarPagina(delta) {
+          paginaActual += delta;
+          aplicarFiltroPaginacion();
+        }
+
+        if (inputBusqueda) {
+          inputBusqueda.addEventListener('input', () => {
+            paginaActual = 1;
+            aplicarFiltroPaginacion();
+          });
+        }
+        aplicarFiltroPaginacion();
+      </script>
+    </main>
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+  </div>
+</body>
+</html>

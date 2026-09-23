@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Pagos registrados')}"></head>
+<body class="bg-muted/20" style="background-color: rgba(236,236,240,0.25);">
+  <header th:replace="~{fragments/navbar :: navbar}"></header>
+
+  <div class="min-h-screen flex flex-col">
+    <main class="flex-1 container mx-auto px-4 py-10">
+      <h2 class="text-2xl font-medium mb-6">Listado de pagos (solo lectura)</h2>
+
+      <div th:if="${not #lists.isEmpty(pagos)}">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <input
+            type="text"
+            id="buscar-pago"
+            placeholder="Buscar por cliente, técnico, estado..."
+            class="w-full max-w-sm border rounded-lg p-2 text-sm"
+            style="border-color: var(--border);"
+          />
+          <div class="flex items-center gap-2">
+            <a th:href="@{/admin/exportar/pagos.csv}" class="btn-outline btn-sm">⬇ Exportar CSV</a>
+            <a th:href="@{/admin/exportar/pagos.xlsx}" class="btn-primary btn-sm">⬇ Exportar Excel</a>
+          </div>
+        </div>
+
+        <div class="card overflow-x-auto p-0">
+          <table class="table-clean" id="tabla-pagos">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Cliente</th>
+                <th>Técnico</th>
+                <th>Servicio</th>
+                <th>Monto</th>
+                <th>Método</th>
+                <th>Estado</th>
+                <th>Fecha de pago</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="pago : ${pagos}">
+                <td th:text="${pago.idPago}">-</td>
+                <td th:text="${pago.cliente != null ? (pago.cliente.nombres + ' ' + pago.cliente.apellidoPaterno) : 'N/A'}">-</td>
+                <td th:text="${pago.servicio != null and pago.servicio.tecnico != null ? (pago.servicio.tecnico.nombres + ' ' + pago.servicio.tecnico.apellidoPaterno) : 'Sin asignar'}">-</td>
+                <td th:text="${pago.servicio != null ? pago.servicio.descripcion : 'N/A'}">-</td>
+                <td th:text="${'S/ ' + #numbers.formatDecimal(pago.monto, 1, 2)}">S/ 0.00</td>
+                <td th:text="${pago.metodoPago ?: 'N/A'}">-</td>
+                <td>
+                  <span class="badge-soft"
+                        th:style="${pago.estado == 'PAGADO'} ? 'background:#dcfce7; color:#166534;' : (${pago.estado == 'CANCELADO'} ? 'background:#fee2e2; color:#991b1b;' : 'background:#fef3c7; color:#92400e;')"
+                        th:text="${pago.estado}">PENDIENTE</span>
+                </td>
+                <td th:text="${pago.fechaPago != null ? #temporals.format(pago.fechaPago, 'dd/MM/yyyy HH:mm') : 'N/A'}">-</td>
+              </tr>
+            </tbody>
+          </table>
+          <p id="sin-resultados-pago" class="hidden text-sm p-4" style="color: var(--muted-foreground);">
+            No se encontraron pagos que coincidan con la búsqueda.
+          </p>
+        </div>
+
+        <!-- Controles de paginación -->
+        <div class="flex items-center justify-between mt-4 text-sm">
+          <span id="tabla-pagos-info" style="color: var(--muted-foreground);"></span>
+          <div class="flex items-center gap-2">
+            <button type="button" id="tabla-pagos-prev" class="btn-outline btn-sm" onclick="cambiarPagina(-1)">← Anterior</button>
+            <span id="tabla-pagos-pagina" class="text-sm font-medium"></span>
+            <button type="button" id="tabla-pagos-next" class="btn-outline btn-sm" onclick="cambiarPagina(1)">Siguiente →</button>
+          </div>
+        </div>
+      </div>
+      <div th:if="${#lists.isEmpty(pagos)}" class="card text-sm text-muted-foreground">No hay pagos registrados.</div>
+
+      <a th:href="@{/admin/dashboard}" class="btn-outline mt-6 inline-block">Volver</a>
+
+      <script>
+        const FILAS_POR_PAGINA = 10;
+        let paginaActual = 1;
+        const inputBusqueda = document.getElementById('buscar-pago');
+        const tabla = document.getElementById('tabla-pagos');
+        const filas = tabla ? Array.from(tabla.querySelectorAll('tbody tr')) : [];
+
+        function aplicarFiltroPaginacion() {
+          const filtro = (inputBusqueda?.value || '').trim().toLowerCase();
+          const coincidentes = filas.filter((fila) => fila.textContent.toLowerCase().includes(filtro));
+          const totalPaginas = Math.max(1, Math.ceil(coincidentes.length / FILAS_POR_PAGINA));
+          if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+
+          const inicio = (paginaActual - 1) * FILAS_POR_PAGINA;
+          const fin = inicio + FILAS_POR_PAGINA;
+
+          filas.forEach((fila) => {
+            const idx = coincidentes.indexOf(fila);
+            const visible = idx !== -1 && idx >= inicio && idx < fin;
+            fila.style.display = visible ? '' : 'none';
+          });
+
+          const mensaje = document.getElementById('sin-resultados-pago');
+          if (mensaje) mensaje.classList.toggle('hidden', coincidentes.length !== 0);
+
+          const desde = coincidentes.length === 0 ? 0 : inicio + 1;
+          const hasta = Math.min(fin, coincidentes.length);
+          document.getElementById('tabla-pagos-info').textContent =
+            'Mostrando ' + desde + '–' + hasta + ' de ' + coincidentes.length;
+          document.getElementById('tabla-pagos-pagina').textContent =
+            'Página ' + paginaActual + ' de ' + totalPaginas;
+
+          const prevBtn = document.getElementById('tabla-pagos-prev');
+          const nextBtn = document.getElementById('tabla-pagos-next');
+          prevBtn.disabled = paginaActual === 1;
+          nextBtn.disabled = paginaActual === totalPaginas;
+          prevBtn.style.opacity = paginaActual === 1 ? '0.5' : '1';
+          nextBtn.style.opacity = paginaActual === totalPaginas ? '0.5' : '1';
+        }
+
+        function cambiarPagina(delta) {
+          paginaActual += delta;
+          aplicarFiltroPaginacion();
+        }
+
+        if (inputBusqueda) {
+          inputBusqueda.addEventListener('input', () => {
+            paginaActual = 1;
+            aplicarFiltroPaginacion();
+          });
+        }
+        aplicarFiltroPaginacion();
+      </script>
+    </main>
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+  </div>
+</body>
+</html>

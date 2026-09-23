@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Registro exitoso - HogarFix</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/css/styles.css" rel="stylesheet" />
+    <style>body { font-family: "Inter", sans-serif; }</style>
+  </head>
+  <body class="min-h-screen auth-gradient flex items-center justify-center py-10">
+    <div class="w-full max-w-md mx-auto px-4">
+      <div class="card rounded-2xl shadow-xl text-center p-8">
+        <div class="mx-auto mb-4 flex items-center justify-center rounded-full"
+             style="width:64px; height:64px; background:#dcfce7;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"
+               fill="none" stroke="#166534" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        </div>
+
+        <h2 class="text-2xl font-medium mb-2">¡Registro exitoso!</h2>
+        <p class="text-sm mb-6" style="color: var(--muted-foreground);">
+          Gracias por unirte a HogarFix como técnico.
+        </p>
+
+        <div class="p-4 rounded-lg text-left mb-6" style="background:#fef3c7;">
+          <p class="text-sm font-medium mb-1" style="color:#92400e;">Tu cuenta está en revisión</p>
+          <p class="text-sm" style="color:#92400e;">
+            Nuestro equipo verificará tu certificado profesional y tus datos.
+            Este proceso toma hasta <strong>24 horas</strong>. Te avisaremos por
+            correo en cuanto tu cuenta esté habilitada para iniciar sesión.
+          </p>
+        </div>
+
+        <a th:href="@{/tecnicos/login}" class="btn-primary w-full inline-block text-center">
+          Ir a inicio de sesión
+        </a>
+      </div>
+    </div>
+  </body>
+</html>

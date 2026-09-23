@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Perfil | HogarFix</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="/css/styles.css" rel="stylesheet" />
+    <style>
+      body { font-family: "Inter", sans-serif; }
+      .swal-label {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        display: block;
+      }
+
+      .swal-input-modern {
+        width: 100%;
+        padding: 9px 11px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.18s ease;
+      }
+
+      .swal-input-modern:focus {
+        border-color: var(--primary);
+        background: white;
+      }
+    </style>
+  </head>
+  <body style="background-color: rgba(236,236,240,0.3);">
+    <header class="w-full bg-white border-b sticky top-0 z-50" style="border-color: var(--border);">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        <a href="/" class="text-2xl font-medium text-primary">HogarFix</a>
+        <div class="flex items-center space-x-3">
+          <form th:action="@{/logout}" method="post">
+            <button type="submit" class="btn-outline btn-sm">Cerrar sesión</button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+      <section class="card rounded-2xl">
+        <div class="flex flex-col items-center">
+          <img
+            src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+            alt="Cliente"
+            class="w-24 h-24 rounded-full mb-3"
+          />
+          <h2
+            class="text-lg font-medium"
+            th:text="${cliente.nombres + ' ' + cliente.apellidoPaterno}"
+          >
+            Nombre Cliente
+          </h2>
+          <p class="text-sm" style="color: var(--muted-foreground);" th:text="${cliente.dni}">DNI</p>
+        </div>
+
+        <div class="mt-4 space-y-2 text-sm" style="color: var(--muted-foreground);">
+          <p>
+            <i data-lucide="mail" class="inline w-4 h-4"></i>
+            <span th:text="${cliente.usuario.email}">email@ejemplo.com</span>
+          </p>
+          <p>
+            <i data-lucide="phone" class="inline w-4 h-4"></i>
+            <span th:text="${cliente.telefono}">+51 9xx xxx xxx</span>
+          </p>
+          <p>
+            <i data-lucide="map-pin" class="inline w-4 h-4"></i>
+            <span th:text="${cliente.direccion.calle + ' ' + cliente.direccion.numero}">Calle y numero</span>,
+            <span th:text="${cliente.direccion.ciudad.nombre}">Ciudad</span>
+          </p>
+          <p th:if="${cliente.direccion.referencia != null}">
+            <i data-lucide="map-pin" class="inline w-4 h-4"></i>
+            <span th:text="${cliente.direccion.referencia}">Referencia</span>
+          </p>
+          <button onclick="abrirEditarCliente()" class="btn-primary w-full mt-4">Editar perfil</button>
+        </div>
+      </section>
+
+      <section class="md:col-span-2 card rounded-2xl">
+        <h3 class="text-lg font-medium mb-1">Mis solicitudes</h3>
+
+        <div th:if="${serviciosPendientes != null and !#lists.isEmpty(serviciosPendientes)}" class="overflow-x-auto">
+          <table class="table-clean mb-4">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Categoría</th>
+                <th>Descripción</th>
+                <th>Urgencia</th>
+                <th>Estado</th>
+                <th>Chat</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="s : ${serviciosPendientes}">
+                <td th:text="${#temporals.format(s.fechaSolicitud, 'dd/MM/yyyy HH:mm')}">01/01/2024</td>
+                <td th:text="${s.categoria != null ? s.categoria.nombre : 'Sin categoría'}">Plomería</td>
+                <td th:text="${s.descripcion}">Descripción del servicio</td>
+                <td th:text="${s.urgencia != null ? s.urgencia : '-'}">media</td>
+                <td><span class="badge-soft" th:text="${s.estado}">PENDIENTE</span></td>
+                <td>
+                  <button type="button" class="btn-outline btn-sm"
+                          th:attr="data-servicio-id=${s.idServicio}"
+                          th:data-nombre="${'Técnico: ' + (s.tecnico != null ? (s.tecnico.nombres + ' ' + s.tecnico.apellidoPaterno) : 'Sin asignar')}"
+                          onclick="abrirChatFlotante(this.dataset.servicioId, this.dataset.nombre)">
+                    💬 Chat
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div th:if="${serviciosPendientes == null or #lists.isEmpty(serviciosPendientes)}">
+          <p class="text-sm mb-4" style="color: var(--muted-foreground);">Tus solicitudes recientes aparecerán aquí.</p>
+        </div>
+
+        <h3 class="text-lg font-medium mb-1 mt-6" th:if="${serviciosEnProceso != null and !#lists.isEmpty(serviciosEnProceso)}">
+          Servicios en proceso
+        </h3>
+        <div th:if="${serviciosEnProceso != null and !#lists.isEmpty(serviciosEnProceso)}" class="space-y-4 mb-4">
+          <div th:each="s : ${serviciosEnProceso}" class="border rounded-xl p-4" style="border-color: var(--border);">
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <p class="font-medium" th:text="${s.categoria != null ? s.categoria.nombre : 'Servicio'}">Plomería</p>
+                <p class="text-xs" style="color: var(--muted-foreground);"
+                   th:text="${'Técnico: ' + (s.tecnico != null ? (s.tecnico.nombres + ' ' + s.tecnico.apellidoPaterno) : 'Sin asignar')}">
+                  Técnico: Nombre
+                </p>
+              </div>
+              <button type="button" class="btn-outline btn-sm"
+                      th:attr="data-servicio-id=${s.idServicio}"
+                      th:data-nombre="${'Técnico: ' + (s.tecnico != null ? (s.tecnico.nombres + ' ' + s.tecnico.apellidoPaterno) : 'Sin asignar')}"
+                      onclick="abrirChatFlotante(this.dataset.servicioId, this.dataset.nombre)">
+                💬 Chat
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="text-lg font-medium mb-1 mt-6">Pagos pendientes</h3>
+        <p class="text-sm mb-4" style="color: var(--muted-foreground);">Servicios finalizados que requieren pago.</p>
+
+        <div th:if="${pagosPendientes != null and !#lists.isEmpty(pagosPendientes)}" class="overflow-x-auto">
+          <table class="table-clean">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Servicio / Categoría</th>
+                <th>Monto</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="p : ${pagosPendientes}">
+                <td th:text="${p.servicio != null and p.servicio.fechaFinalizacion != null ? #temporals.format(p.servicio.fechaFinalizacion, 'dd/MM/yyyy') : '-'}">01/01/2025</td>
+                <td th:text="${p.servicio != null and p.servicio.categoria != null ? p.servicio.categoria.nombre : 'Servicio'}">Reparación de lavadora</td>
+                <td th:text="${'S/ ' + p.monto}">S/ 120.00</td>
+                <td>
+                  <a th:href="@{/pagos(pagoId=${p.idPago})}" class="btn-primary btn-sm">Pagar</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div th:if="${pagosPendientes == null or #lists.isEmpty(pagosPendientes)}">
+          <p class="text-sm" style="color: var(--muted-foreground);">No hay pagos pendientes.</p>
+        </div>
+
+        <h3 class="text-lg font-medium mb-1 mt-6">Servicios por calificar</h3>
+        <p class="text-sm mb-4" style="color: var(--muted-foreground);">Cuéntanos cómo te fue con el técnico.</p>
+
+        <div th:if="${mensajeExito}" class="text-sm mb-4 p-3 rounded-lg" style="background:#dcfce7; color:#166534;">
+          <span th:text="${mensajeExito}">Gracias por tu calificación</span>
+        </div>
+        <div th:if="${mensajeError}" class="text-sm mb-4 p-3 rounded-lg" style="background:#fee2e2; color:#991b1b;">
+          <span th:text="${mensajeError}">Ocurrió un error</span>
+        </div>
+
+        <div th:if="${serviciosPorCalificar != null and !#lists.isEmpty(serviciosPorCalificar)}" class="space-y-4">
+          <div th:each="s : ${serviciosPorCalificar}" class="border rounded-xl p-4" style="border-color: var(--border);">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <div>
+                <p class="font-medium" th:text="${s.categoria != null ? s.categoria.nombre : 'Servicio'}">Plomería</p>
+                <p class="text-sm" style="color: var(--muted-foreground);" th:text="${s.descripcion}">Descripción</p>
+                <p class="text-xs" style="color: var(--muted-foreground);"
+                   th:text="${'Técnico: ' + (s.tecnico != null ? (s.tecnico.nombres + ' ' + s.tecnico.apellidoPaterno) : 'Sin asignar')}">
+                  Técnico: Nombre
+                </p>
+              </div>
+            </div>
+
+            <form th:action="@{/clientes/calificar}" method="post" class="flex flex-wrap items-end gap-3">
+              <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+              <input type="hidden" name="idServicio" th:value="${s.idServicio}" />
+
+              <div>
+                <label class="text-xs font-medium block mb-1">Puntuación</label>
+                <select name="puntuacion" required class="swal-input-modern" style="width: auto;">
+                  <option value="">Selecciona...</option>
+                  <option value="5">⭐⭐⭐⭐⭐ Excelente</option>
+                  <option value="4">⭐⭐⭐⭐ Muy bueno</option>
+                  <option value="3">⭐⭐⭐ Bueno</option>
+                  <option value="2">⭐⭐ Regular</option>
+                  <option value="1">⭐ Malo</option>
+                </select>
+              </div>
+
+              <div class="flex-1 min-w-[200px]">
+                <label class="text-xs font-medium block mb-1">Comentario (opcional)</label>
+                <input type="text" name="observacion" class="swal-input-modern" placeholder="¿Cómo fue tu experiencia?" />
+              </div>
+
+              <button type="submit" class="btn-primary btn-sm">Enviar calificación</button>
+            </form>
+          </div>
+        </div>
+        <div th:if="${serviciosPorCalificar == null or #lists.isEmpty(serviciosPorCalificar)}">
+          <p class="text-sm" style="color: var(--muted-foreground);">No tienes servicios pendientes de calificar.</p>
+        </div>
+      </section>
+      <div id="selectCiudadesHtml" style="display: none">
+        <option th:each="c : ${ciudades}" th:value="${c.idCiudad}" th:text="${c.nombre}"></option>
+      </div>
+    </main>
+    <script>
+      function abrirEditarCliente() {
+        Swal.fire({
+          title: "Editar perfil",
+          width: "min(750px, 92vw)",
+          showCancelButton: true,
+          confirmButtonText: "Guardar",
+          cancelButtonText: "Cancelar",
+          customClass: {
+            popup: "rounded-xl",
+            title: "text-2xl font-semibold mb-3",
+            confirmButton: "px-5 py-2 rounded text-white",
+            cancelButton: "bg-gray-400 px-5 py-2 rounded text-white",
+          },
+          didOpen: () => {
+            const confirmBtn = Swal.getConfirmButton();
+            if (confirmBtn) confirmBtn.style.backgroundColor = "#030213";
+          },
+          html: `
+      <input type="hidden" id="idCliente" value="[[${cliente.idCliente}]]">
+
+    <div class="swal-form-grid">
+
+      <div>
+        <label class="swal-label">Nombres</label>
+        <input id="nombres" class="swal-input-modern" value="[[${
+          cliente.nombres
+        }]]">
+      </div>
+
+      <div>
+        <label class="swal-label">Apellido Paterno</label>
+        <input id="apellidoPaterno" class="swal-input-modern" value="[[${
+          cliente.apellidoPaterno
+        }]]">
+      </div>
+
+      <div>
+        <label class="swal-label">Apellido Materno</label>
+        <input id="apellidoMaterno" class="swal-input-modern" value="[[${
+          cliente.apellidoMaterno
+        }]]">
+      </div>
+
+      <div>
+        <label class="swal-label">Teléfono</label>
+        <input id="telefono" class="swal-input-modern" value="[[${
+          cliente.telefono
+        }]]">
+      </div>
+
+      <div class="col-span-2">
+        <label class="swal-label">Correo electrónico</label>
+        <input id="email" class="swal-input-modern" value="[[${
+          cliente.usuario.email
+        }]]">
+      </div>
+
+      <div class="col-span-2">
+        <label class="swal-label">Ciudad</label>
+        <select id="ciudadSelectSwal" class="swal-input-modern">
+          ${document.getElementById("selectCiudadesHtml").innerHTML}
+        </select>
+      </div>
+
+      <div>
+        <label class="swal-label">Calle</label>
+        <input id="calle" class="swal-input-modern" value="[[${
+          cliente.direccion.calle
+        }]]">
+      </div>
+
+      <div>
+        <label class="swal-label">Número</label>
+        <input id="numero" class="swal-input-modern" value="[[${
+          cliente.direccion.numero
+        }]]">
+      </div>
+
+      <div class="col-span-2">
+        <label class="swal-label">Referencia</label>
+        <input id="referencia" class="swal-input-modern" value="[[${
+          cliente.direccion.referencia
+        }]]">
+      </div>
+
+    </div>
+    `,
+          preConfirm: () => {
+            const nombres = document.getElementById("nombres").value.trim();
+            const apellidoPaterno = document
+              .getElementById("apellidoPaterno")
+              .value.trim();
+            const apellidoMaterno = document
+              .getElementById("apellidoMaterno")
+              .value.trim();
+            const telefono = document.getElementById("telefono").value.trim();
+            const calle = document.getElementById("calle").value.trim();
+            const numero = document.getElementById("numero").value.trim();
+            const referencia = document
+              .getElementById("referencia")
+              .value.trim();
+
+            const soloLetras = /^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/;
+            const soloNumeros = /^[0-9]+$/;
+
+            if (!soloLetras.test(nombres)) {
+              Swal.showValidationMessage(
+                "El campo Nombres solo debe contener letras."
+              );
+              return false;
+            }
+            if (!soloLetras.test(apellidoPaterno)) {
+              Swal.showValidationMessage(
+                "El Apellido Paterno solo debe contener letras."
+              );
+              return false;
+            }
+            if (!soloLetras.test(apellidoMaterno)) {
+              Swal.showValidationMessage(
+                "El Apellido Materno solo debe contener letras."
+              );
+              return false;
+            }
+            if (!soloNumeros.test(telefono)) {
+              Swal.showValidationMessage(
+                "El Teléfono solo debe contener números."
+              );
+              return false;
+            }
+            if (!soloLetras.test(calle)) {
+              Swal.showValidationMessage("La Calle solo debe contener letras.");
+              return false;
+            }
+            if (!soloNumeros.test(numero)) {
+              Swal.showValidationMessage(
+                "El Número solo debe contener números."
+              );
+              return false;
+            }
+            if (!soloLetras.test(referencia)) {
+              Swal.showValidationMessage(
+                "La Referencia solo debe contener letras."
+              );
+              return false;
+            }
+
+            const formData = new FormData();
+
+            formData.append(
+              "idCliente",
+              document.getElementById("idCliente").value
+            );
+
+            formData.append(
+              "nombres",
+              document.getElementById("nombres").value
+            );
+            formData.append(
+              "apellidoPaterno",
+              document.getElementById("apellidoPaterno").value
+            );
+            formData.append(
+              "apellidoMaterno",
+              document.getElementById("apellidoMaterno").value
+            );
+            formData.append(
+              "telefono",
+              document.getElementById("telefono").value
+            );
+            formData.append("email", document.getElementById("email").value);
+
+            formData.append(
+              "ciudadId",
+              document.getElementById("ciudadSelectSwal").value
+            );
+            formData.append("calle", document.getElementById("calle").value);
+            formData.append("numero", document.getElementById("numero").value);
+            formData.append(
+              "referencia",
+              document.getElementById("referencia").value
+            );
+
+            return fetch("/clientes/actualizar-perfil", {
+              method: "POST",
+              body: formData,
+            })
+              .then((resp) => {
+                if (!resp.ok) throw new Error("Error al actualizar");
+                return resp.json();
+              })
+              .catch((err) => {
+                Swal.showValidationMessage("No se pudo guardar: " + err);
+              });
+          },
+        }).then((result) => {
+          if (result.isConfirmed) {
+            Swal.fire(
+              "Guardado",
+              "Tu información ha sido actualizada.",
+              "success"
+            ).then(() => location.reload());
+          }
+        });
+      }
+    </script>
+    <script>
+      lucide.createIcons();
+    </script>
+  <script>
+    // --- Chat flotante cliente ↔ técnico (polling cada 4 segundos) ---
+    let chatActivoId = null;
+    let chatIntervalo = null;
+
+    function escapeHtml(texto) {
+      const div = document.createElement('div');
+      div.textContent = texto;
+      return div.innerHTML;
+    }
+
+    function renderMensajesFlotante(mensajes) {
+      const contenedor = document.getElementById('chat-widget-mensajes');
+      if (!contenedor) return;
+      if (!mensajes.length) {
+        contenedor.innerHTML = '<p style="font-size:12px; color:#94a3b8; text-align:center; margin-top:16px;">Aún no hay mensajes. ¡Escribe el primero!</p>';
+        return;
+      }
+      contenedor.innerHTML = mensajes.map(m => {
+        const esMio = m.autor === 'CLIENTE';
+        const alineacion = esMio ? 'justify-content:flex-end;' : 'justify-content:flex-start;';
+        const color = esMio ? 'background:#030213; color:#fff;' : 'background:#e5e7eb; color:#111;';
+        return '<div style="display:flex; ' + alineacion + ' margin-bottom:6px;">' +
+          '<div style="max-width:75%; padding:6px 10px; border-radius:10px; font-size:13px; ' + color + '">' +
+          escapeHtml(m.contenido) +
+          '<div style="font-size:10px; opacity:0.7; margin-top:2px;">' + m.fecha + '</div>' +
+          '</div></div>';
+      }).join('');
+      contenedor.scrollTop = contenedor.scrollHeight;
+    }
+
+    async function cargarMensajesFlotante() {
+      if (!chatActivoId) return;
+      try {
+        const res = await fetch('/api/mensajes/' + chatActivoId, { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const mensajes = await res.json();
+        renderMensajesFlotante(mensajes);
+      } catch (e) {
+        console.warn('No se pudo cargar el chat:', e);
+      }
+    }
+
+    function abrirChatFlotante(idServicio, nombreContacto) {
+      chatActivoId = idServicio;
+      document.getElementById('chat-widget-titulo').textContent = nombreContacto || 'Chat';
+      document.getElementById('chat-widget-mensajes').innerHTML = '';
+      document.getElementById('chat-widget-panel').classList.remove('hidden');
+      document.getElementById('chat-widget-burbuja').classList.add('hidden');
+      cargarMensajesFlotante();
+
+      if (chatIntervalo) clearInterval(chatIntervalo);
+      chatIntervalo = setInterval(cargarMensajesFlotante, 4000);
+
+      document.getElementById('chat-widget-input').focus();
+    }
+
+    function minimizarChatFlotante() {
+      document.getElementById('chat-widget-panel').classList.add('hidden');
+      document.getElementById('chat-widget-burbuja').classList.remove('hidden');
+    }
+
+    function toggleChatFlotante() {
+      const panel = document.getElementById('chat-widget-panel');
+      if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        document.getElementById('chat-widget-burbuja').classList.add('hidden');
+        if (chatActivoId) cargarMensajesFlotante();
+      } else {
+        minimizarChatFlotante();
+      }
+    }
+
+    async function enviarMensajeChatFlotante() {
+      if (!chatActivoId) return;
+      const input = document.getElementById('chat-widget-input');
+      const contenido = input.value.trim();
+      if (!contenido) return;
+
+      try {
+        const res = await fetch('/api/mensajes/' + chatActivoId, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ contenido }),
+        });
+        if (res.ok) {
+          input.value = '';
+          cargarMensajesFlotante();
+        }
+      } catch (e) {
+        console.warn('No se pudo enviar el mensaje:', e);
+      }
+    }
+
+    document.getElementById('chat-widget-input')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        enviarMensajeChatFlotante();
+      }
+    });
+  </script>
+
+  <!-- Widget de chat flotante -->
+  <div id="chat-widget" class="fixed bottom-5 right-5 z-50 flex flex-col items-end">
+    <div id="chat-widget-panel" class="hidden mb-3 w-80 max-w-[88vw] bg-white rounded-2xl shadow-xl border overflow-hidden" style="border-color: var(--border);">
+      <div class="flex items-center justify-between px-4 py-3" style="background: var(--primary); color: var(--primary-foreground);">
+        <p class="font-medium text-sm truncate" id="chat-widget-titulo">Chat</p>
+        <button type="button" onclick="minimizarChatFlotante()" class="p-1 hover:opacity-80" aria-label="Minimizar chat">
+          <i data-lucide="minus" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div id="chat-widget-mensajes" class="p-3 overflow-y-auto" style="height: 300px; background:#f8fafc;"></div>
+      <div class="flex gap-2 p-3 border-t" style="border-color: var(--border);">
+        <input type="text" id="chat-widget-input"
+               placeholder="Escribe un mensaje..."
+               class="flex-1 border rounded-lg p-2 text-sm" style="border-color: var(--border);" />
+        <button type="button" class="btn-primary btn-sm" onclick="enviarMensajeChatFlotante()">
+          Enviar
+        </button>
+      </div>
+    </div>
+
+    <button type="button" id="chat-widget-burbuja" onclick="toggleChatFlotante()"
+            class="hidden rounded-full shadow-lg items-center justify-center"
+            style="width:56px; height:56px; background: var(--primary); color: var(--primary-foreground); display:flex;">
+      <i data-lucide="message-circle" class="w-6 h-6"></i>
+    </button>
+  </div>
+  </body>
+</html>

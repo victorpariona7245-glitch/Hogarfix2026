@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{fragments/head :: head('Dashboard Admin')}"></head>
+  <body class="bg-muted/20" style="background-color: rgba(236,236,240,0.25);">
+    <header th:replace="~{fragments/navbar :: navbar}"></header>
+
+    <div class="min-h-screen flex flex-col">
+      <main class="flex-1 container mx-auto px-4 py-12">
+        <h2 class="text-2xl font-medium text-center mb-8">Panel de Administración</h2>
+
+        <div class="grid md:grid-cols-3 gap-6 mb-12">
+          <div class="card text-center">
+            <h5 class="text-sm text-muted-foreground mb-2">Clientes</h5>
+            <p class="text-4xl font-semibold text-primary" th:text="${clientesCount}">0</p>
+          </div>
+          <div class="card text-center">
+            <h5 class="text-sm text-muted-foreground mb-2">Técnicos</h5>
+            <p class="text-4xl font-semibold" style="color:#16a34a" th:text="${tecnicosCount}">0</p>
+          </div>
+          <div class="card text-center">
+            <h5 class="text-sm text-muted-foreground mb-2">Total Pagos</h5>
+            <p class="text-4xl font-semibold" style="color:#d97706" th:text="${totalPagos}">0</p>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div class="card flex flex-col">
+            <h5 class="text-lg font-medium mb-2">Clientes</h5>
+            <p class="text-sm text-muted-foreground mb-6">Ver el listado completo de clientes registrados en la base de datos (solo lectura).</p>
+            <a th:href="@{/admin/clientes}" class="btn-primary mt-auto self-start">Ver clientes</a>
+          </div>
+          <div class="card flex flex-col">
+            <h5 class="text-lg font-medium mb-2">Técnicos</h5>
+            <p class="text-sm text-muted-foreground mb-6">Ver el listado completo de técnicos registrados en la base de datos (solo lectura).</p>
+            <a th:href="@{/admin/tecnicos}" class="btn-primary mt-auto self-start">Ver técnicos</a>
+          </div>
+          <div class="card flex flex-col">
+            <h5 class="text-lg font-medium mb-2">Pagos</h5>
+            <p class="text-sm text-muted-foreground mb-6">Ver el historial de pagos registrados y exportarlo como reporte.</p>
+            <a th:href="@{/admin/pagos}" class="btn-primary mt-auto self-start">Ver pagos</a>
+          </div>
+          <div class="card flex flex-col" style="border-color:#fbbf24;">
+            <div class="flex items-center justify-between mb-2">
+              <h5 class="text-lg font-medium">Certificados</h5>
+              <span th:if="${certificadosPendientesCount != null and certificadosPendientesCount > 0}"
+                    class="badge-soft" style="background:#fef3c7; color:#92400e;"
+                    th:text="${certificadosPendientesCount + ' pendiente' + (certificadosPendientesCount == 1 ? '' : 's')}">
+                0 pendientes
+              </span>
+            </div>
+            <p class="text-sm text-muted-foreground mb-6">Revisa el certificado profesional de cada técnico y habilita su cuenta.</p>
+            <a th:href="@{/admin/certificados}" class="btn-primary mt-auto self-start">Revisar certificados</a>
+          </div>
+        </div>
+
+        <div class="text-center mb-8">
+          <a href="/logout" class="btn-danger-outline">Cerrar Sesión</a>
+        </div>
+      </main>
+      <footer th:replace="~{fragments/footer :: footer}"></footer>
+    </div>
+  </body>
+</html>
