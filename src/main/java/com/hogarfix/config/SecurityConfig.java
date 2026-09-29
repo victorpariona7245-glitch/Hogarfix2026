@@ -48,7 +48,7 @@ public class SecurityConfig {
                                                 .logoutSuccessUrl("/auth/login?logout")
                                                 .permitAll())
                                 // Deshabilitar CSRF solo en desarrollo o si manejas tokens manualmente
-                                .csrf(csrf -> csrf.disable());
+                                .csrf(Customizer.withDefaults());
 
                 return http.build();
         }
