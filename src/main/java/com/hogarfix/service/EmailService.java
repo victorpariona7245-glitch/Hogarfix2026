@@ -3,6 +3,7 @@ package com.hogarfix.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -11,6 +12,7 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
+    @Async
     public void sendWelcomeEmail(String to, String nombre) {
         if (to == null || to.isBlank()) return;
 
@@ -34,6 +36,7 @@ public class EmailService {
     /**
      * Notifica al cliente que un técnico rechazó su solicitud de servicio.
      */
+    @Async
     public void sendSolicitudRechazadaEmail(String to, String nombreCliente, String nombreTecnico,
             String categoria) {
         if (to == null || to.isBlank()) return;
@@ -60,6 +63,7 @@ public class EmailService {
     /**
      * Notifica al técnico que le llegó una nueva solicitud de servicio.
      */
+    @Async
     public void sendNuevaSolicitudEmail(String to, String nombreTecnico, String nombreCliente, String categoria,
             String urgencia, String descripcion) {
         if (to == null || to.isBlank()) return;
@@ -89,6 +93,7 @@ public class EmailService {
      * Notifica al cliente que su solicitud fue cancelada automáticamente
      * porque el técnico no la aceptó ni la rechazó dentro del tiempo límite.
      */
+    @Async
     public void sendSolicitudExpiradaEmail(String to, String nombreCliente, String nombreTecnico,
             String categoria) {
         if (to == null || to.isBlank()) return;
