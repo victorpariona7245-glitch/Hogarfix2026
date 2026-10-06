@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{fragments/head :: head('Registro Cliente')}"></head>
+  <body class="auth-gradient min-h-screen">
+    <header th:replace="~{fragments/navbar :: navbar}"></header>
+
+    <div class="container mx-auto max-w-3xl px-4 py-12">
+      <div class="text-center mb-8">
+        <h2 class="text-3xl font-medium mb-2">Registro de Cliente</h2>
+        <p class="text-sm" style="color: var(--muted-foreground);">Crea tu cuenta para solicitar técnicos de confianza</p>
+      </div>
+
+      <form
+        th:action="@{/clientes/registro}"
+        th:object="${cliente}"
+        method="post"
+        class="card rounded-2xl shadow-xl space-y-6"
+      >
+        <div th:if="${error}" class="p-3 text-sm rounded-lg" style="background-color:#fee2e2; color:#991b1b;" th:text="${error}"></div>
+
+        <div>
+          <h3 class="text-sm font-medium mb-3 text-primary">Datos personales</h3>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">Nombres</label>
+              <input type="text" th:field="*{nombres}" pattern="[a-zA-Z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1\s]{2,100}" minlength="2" maxlength="100" class="form-input" required />
+              <p class="form-hint">Solo letras, mínimo 2 caracteres</p>
+            </div>
+            <div>
+              <label class="form-label">Apellido paterno</label>
+              <input type="text" th:field="*{apellidoPaterno}" pattern="[a-zA-Z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1\s]{2,100}" minlength="2" maxlength="100" class="form-input" required />
+              <p class="form-hint">Solo letras, mínimo 2 caracteres</p>
+            </div>
+            <div>
+              <label class="form-label">Apellido materno</label>
+              <input type="text" th:field="*{apellidoMaterno}" pattern="[a-zA-Z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1\s]{2,100}" minlength="2" maxlength="100" class="form-input" />
+              <p class="form-hint">Solo letras (opcional)</p>
+            </div>
+            <div>
+              <label class="form-label">DNI</label>
+              <input type="text" th:field="*{dni}" pattern="\d{8}" inputmode="numeric" minlength="8" maxlength="8" class="form-input" required />
+              <p class="form-hint">Exactamente 8 dígitos</p>
+            </div>
+            <div>
+              <label class="form-label">Teléfono</label>
+              <input type="tel" th:field="*{telefono}" pattern="\d{9}" inputmode="numeric" minlength="9" maxlength="9" class="form-input" />
+              <p class="form-hint">Exactamente 9 dígitos</p>
+            </div>
+            <div>
+              <label class="form-label">Fecha de nacimiento</label>
+              <input type="date" th:field="*{fechaNacimiento}" class="form-input" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-medium mb-3 text-primary">Cuenta (acceso)</h3>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">Correo electrónico</label>
+              <input type="email" th:field="*{usuario.email}" minlength="5" maxlength="100" class="form-input" required />
+              <p class="form-hint">Email válido requerido</p>
+            </div>
+            <div>
+              <label class="form-label">Contraseña</label>
+              <input type="password" th:field="*{usuario.password}" minlength="6" maxlength="100" class="form-input" required />
+              <p class="form-hint">Mínimo 6 caracteres</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-medium mb-3 text-primary">Dirección</h3>
+          <div class="grid md:grid-cols-6 gap-4">
+            <div class="md:col-span-3">
+              <label class="form-label">Calle</label>
+              <input type="text" th:field="*{direccion.calle}" pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{2,255}" minlength="2" maxlength="255" class="form-input" required />
+              <p class="form-hint">Solo letras, mínimo 2 caracteres</p>
+            </div>
+            <div class="md:col-span-1">
+              <label class="form-label">Número</label>
+              <input type="text" th:field="*{direccion.numero}" pattern="\d{1,50}" inputmode="numeric" maxlength="50" class="form-input" required />
+              <p class="form-hint">Solo números</p>
+            </div>
+            <div class="md:col-span-2">
+              <label class="form-label">Referencia</label>
+              <input type="text" th:field="*{direccion.referencia}" pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{2,100}" minlength="2" maxlength="100" class="form-input" />
+              <p class="form-hint">Solo letras (opcional)</p>
+            </div>
+          </div>
+          <div class="mt-4">
+            <label class="form-label">Ciudad</label>
+            <select th:field="*{direccion.ciudad.idCiudad}" class="form-select" required>
+              <option value="" disabled th:if="${#lists.isEmpty(ciudades)}">No hay ciudades</option>
+              <option th:each="c : ${ciudades}" th:value="${c.idCiudad}" th:text="${c.nombre}"></option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary w-full">Registrar Cliente</button>
+
+        <p class="text-center text-sm" style="color: var(--muted-foreground);">
+          ¿Ya tienes cuenta?
+          <a th:href="@{/auth/login}" class="text-primary font-medium hover:underline">Inicia sesión</a>
+        </p>
+      </form>
+    </div>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+  </body>
+</html>

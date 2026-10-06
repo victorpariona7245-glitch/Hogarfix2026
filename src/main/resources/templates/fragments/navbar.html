@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+<header
+  th:fragment="navbar"
+  class="w-full bg-white border-b sticky top-0 z-50"
+  style="border-color: var(--border);"
+>
+  <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+    <a th:href="@{/}" class="flex items-center">
+      <h2 class="text-2xl font-medium text-primary">HogarFix</h2>
+    </a>
+
+    <nav class="desktop-nav flex items-center space-x-8">
+      <a th:href="@{/}" th:if="${session.usuarioActual == null or session.usuarioActual?.rol?.nombre != 'ADMIN'}" class="hover:text-primary transition-colors">Inicio</a>
+      <a th:href="@{/clientes/registro}" th:if="${session.usuarioActual == null or session.usuarioActual?.rol?.nombre != 'ADMIN'}" class="hover:text-primary transition-colors">Regístrate</a>
+      <a th:href="@{/tecnicos/registro}" th:if="${session.usuarioActual == null or session.usuarioActual?.rol?.nombre != 'ADMIN'}" class="hover:text-primary transition-colors">Trabaja con nosotros</a>
+    </nav>
+
+    <div class="desktop-nav flex items-center space-x-4">
+      <div th:if="${session.usuarioActual == null}">
+        <a th:href="@{/auth/login}" class="btn-primary">Iniciar Sesión</a>
+      </div>
+
+      <div th:if="${session.usuarioActual != null and session.usuarioActual?.rol?.nombre != 'ADMIN'}" class="relative">
+        <button type="button" onclick="document.getElementById('navUserMenu').classList.toggle('hidden')" class="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
+          <span th:text="${session.usuarioNombre != null} ? ${session.usuarioNombre} : ${session.usuarioActual.email}"></span>
+          <span aria-hidden="true">▾</span>
+        </button>
+        <div id="navUserMenu" class="hidden absolute right-0 mt-2 w-44 bg-white border rounded-lg shadow-lg py-1 z-50" style="border-color: var(--border);">
+          <a th:href="@{/auth/redirect}" class="block px-4 py-2 text-sm hover:bg-muted">Perfil</a>
+          <form th:action="@{/logout}" method="post">
+            <button type="submit" class="w-full text-left px-4 py-2 text-sm hover:bg-muted">Cerrar sesión</button>
+          </form>
+        </div>
+      </div>
+
+      <div th:if="${session.usuarioActual != null and session.usuarioActual?.rol?.nombre == 'ADMIN'}">
+        <form th:action="@{/logout}" method="post">
+          <button type="submit" class="btn-outline">Cerrar sesión</button>
+        </form>
+      </div>
+    </div>
+
+    <button class="md:hidden p-2 text-2xl leading-none" onclick="document.getElementById('navMobileMenu').classList.toggle('active')" aria-label="Menú">
+      ☰
+    </button>
+  </div>
+
+  <div id="navMobileMenu" class="mobile-menu bg-white border-t" style="border-color: var(--border);">
+    <nav class="px-4 py-4 space-y-4">
+      <a th:href="@{/}" th:if="${session.usuarioActual == null or session.usuarioActual?.rol?.nombre != 'ADMIN'}" class="block hover:text-primary transition-colors">Inicio</a>
+      <a th:href="@{/clientes/registro}" th:if="${session.usuarioActual == null or session.usuarioActual?.rol?.nombre != 'ADMIN'}" class="block hover:text-primary transition-colors">Regístrate</a>
+      <a th:href="@{/tecnicos/registro}" th:if="${session.usuarioActual == null or session.usuarioActual?.rol?.nombre != 'ADMIN'}" class="block hover:text-primary transition-colors">Trabaja con nosotros</a>
+      <a th:href="@{/auth/login}" th:if="${session.usuarioActual == null}" class="block hover:text-primary transition-colors">Iniciar sesión</a>
+      <a th:href="@{/auth/redirect}" th:if="${session.usuarioActual != null and session.usuarioActual?.rol?.nombre != 'ADMIN'}" class="block hover:text-primary transition-colors">Perfil</a>
+      <form th:action="@{/logout}" method="post" th:if="${session.usuarioActual != null}">
+        <button type="submit" class="block hover:text-primary transition-colors">Cerrar sesión</button>
+      </form>
+    </nav>
+  </div>
+</header>
+</body>
+</html>

@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Técnicos Disponibles - HogarFix</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --primary: #030213;
+      --radius: 0.625rem;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: white;
+      padding: 0.5rem 1.2rem;
+      border-radius: var(--radius);
+      transition: 0.2s;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+
+    .card {
+      background-color: white;
+      border: 1px solid #e5e7eb;
+      border-radius: var(--radius);
+      padding: 1rem;
+      transition: 0.2s;
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      transform: translateY(-2px);
+    }
+
+    /* Responsividad general */
+    html, body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+    img { max-width: 100%; height: auto; }
+  </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800">
+
+  <!-- Header -->
+  <header class="w-full bg-white border-b sticky top-0 z-50">
+    <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+      <h2 class="text-2xl font-medium text-primary">HogarFix</h2>
+
+      <!-- Desktop Navigation -->
+      <nav class="desktop-nav flex items-center space-x-8">
+        <a th:href="@{/}+''" class="hover:text-primary transition-colors">Inicio</a>
+        <a th:href="@{/}+'#nosotros'" class="hover:text-primary transition-colors">Nosotros</a>
+        <a th:href="@{/}+'#servicios'" class="hover:text-primary transition-colors">Servicios</a>
+        <a th:href="@{/}+'#testimonios'" class="hover:text-primary transition-colors">Testimonios</a>
+
+        <a th:href="@{/}+'#contacto'" class="hover:text-primary transition-colors">Contacto</a>
+      </nav>
+
+      <div class="desktop-nav flex items-center space-x-4">
+          <!-- Mostrar botón de iniciar sesión solo si no hay sesión activa -->
+          <div th:if="${session.usuarioActual == null}">
+            <a th:href="@{/auth/login}" class="btn-primary">Iniciar Sesión</a>
+          </div>
+          <!-- Si hay sesión, mostrar nombre y menú simple -->
+          <div th:if="${session.usuarioActual != null}" class="relative">
+            <div class="flex items-center gap-2">
+              <span class="font-medium" th:text="${session.usuarioNombre != null} ? ${session.usuarioNombre} : ${session.usuarioActual.email}"></span>
+              <div class="ml-2">
+                <a th:href="@{/auth/redirect}" class="text-sm text-muted-foreground hover:underline">Perfil</a>
+                &nbsp;|&nbsp;
+                <form th:action="@{/logout}" method="post" style="display:inline">
+                  <button type="submit" class="text-sm text-muted-foreground hover:underline">Cerrar sesión</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+      <!-- Mobile Menu Button -->
+      <button class="md:hidden p-2" onclick="toggleMobileMenu()">
+        <i data-lucide="menu" class="w-6 h-6" id="menu-icon"></i>
+        <i data-lucide="x" class="w-6 h-6 hidden" id="close-icon"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Contenido Principal -->
+  <main class="container mx-auto px-4 py-10 grid grid-cols-1 md:grid-cols-4 gap-8">
+
+    <!-- Panel de Filtros (envía GET para que el servidor filtre) -->
+    <aside class="space-y-6">
+      <h3 class="text-lg font-semibold mb-4">Filtrar Técnicos</h3>
+
+      <form method="get" th:action="@{/buscartecnicos}" class="space-y-4">
+        <!-- Especialidad (solo 1 selección) -->
+        <div>
+          <label class="block font-medium mb-2">Especialidad</label>
+          <select name="categoriaId" class="w-full border rounded-lg p-2 text-sm">
+            <option value="" th:text="'-- Todas las especialidades --'"></option>
+            <option th:each="cat : ${categorias}"
+                    th:value="${cat.idCategoria}"
+                    th:text="${cat.nombre}"
+                    th:selected="${param.categoriaId != null and param.categoriaId == cat.idCategoria.toString()}">
+            </option>
+          </select>
+        </div>
+
+        <!-- Ubicación -->
+        <div>
+          <label class="block font-medium mb-2">Ubicación</label>
+          <select name="ciudadId" class="w-full border rounded-lg p-2 text-sm">
+            <option value="" th:text="'-- Todas las ciudades --'"></option>
+            <option th:each="ci : ${ciudades}"
+                    th:value="${ci.idCiudad}"
+                    th:text="${ci.nombre}"
+                    th:selected="${param.ciudadId != null and param.ciudadId == ci.idCiudad.toString()}">
+            </option>
+          </select>
+        </div>
+
+        <!-- Calificación mínima -->
+        <div>
+          <label class="block font-medium mb-2">Calificación mínima</label>
+          <select name="minCalificacion" class="w-full border rounded-lg p-2 text-sm">
+            <option th:value="0" th:selected="${param.minCalificacion == null}">Todas</option>
+            <option th:value="3" th:selected="${param.minCalificacion == '3'}">3 estrellas o más</option>
+            <option th:value="4" th:selected="${param.minCalificacion == '4'}">4 estrellas o más</option>
+            <option th:value="5" th:selected="${param.minCalificacion == '5'}">5 estrellas</option>
+          </select>
+        </div>
+
+        <div>
+          <button type="submit" class="btn-primary w-full">Aplicar filtros</button>
+        </div>
+      </form>
+    </aside>
+
+    <!-- Tarjetas -->
+    <section class="md:col-span-3">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">Técnicos Disponibles</h2>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div th:if="${#lists.isEmpty(tecnicos)}" class="col-span-full text-center text-gray-500">
+          No se encontraron técnicos con esos filtros.
+        </div>
+
+        <article th:each="tecnico : ${tecnicos}" class="card">
+          <div class="flex flex-col items-center text-center">
+      <img th:src="${tecnico.fotoPerfil != null} ? @{/tecnicos/fotos/{name}(name=${tecnico.fotoPerfil.substring(tecnico.fotoPerfil.lastIndexOf('/') + 1)})} : 'https://cdn-icons-png.flaticon.com/512/2922/2922510.png'"
+        alt="Foto técnico"
+        class="w-32 h-32 rounded-full mx-auto object-cover mb-4" />
+            <h3 class="text-lg font-semibold" th:text="${tecnico.nombres + ' ' + tecnico.apellidoPaterno}">Nombre Técnico</h3>
+            <div class="flex flex-wrap justify-center gap-2 mb-1">
+              <span th:if="${#lists.isEmpty(tecnico.categorias)}" class="text-gray-500 text-sm">
+                  Especialidad: Sin especificar
+              </span>
+
+              <span th:each="cat : ${tecnico.categorias}"
+                    class="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full"
+                    th:text="${cat.categoria.nombre}">
+              </span>
+            </div>
+            <p class="text-gray-500 text-sm mb-1" th:unless="${tecnico.categorias != null and !#lists.isEmpty(tecnico.categorias)}">Especialidad: Sin especificar</p>
+            <p class="text-gray-500 text-sm mb-1">Ubicación: <span th:text="${tecnico.direccion.ciudad.nombre}">Ciudad</span></p>
+            <p class="text-yellow-500 mb-3">
+              <span th:text="${tecnico.promedioCalificacion != null ? (tecnico.promedioCalificacion.toString()) : '0.0'}">0.0</span>
+            </p>
+
+            <!-- Estado de disponibilidad del técnico -->
+            <p class="mb-3">
+              <span th:if="${tecnico.disponible != null and tecnico.disponible}"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                <span class="w-2 h-2 rounded-full bg-green-500"></span> Disponible
+              </span>
+              <span th:if="${tecnico.disponible == null or !tecnico.disponible}"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-600">
+                <span class="w-2 h-2 rounded-full bg-gray-400"></span> No disponible
+              </span>
+            </p>
+
+            <!-- Datos ocultos con TODAS las especialidades del técnico -->
+            <span th:each="cat : ${tecnico.categorias}" class="hidden categoria-data"
+                  th:attr="data-tecnico-id=${tecnico.idTecnico},data-cat-id=${cat.categoria.idCategoria},data-cat-nombre=${cat.categoria.nombre}"></span>
+
+            <button type="button" class="contact-btn btn-primary w-full"
+                    th:disabled="${tecnico.disponible == null or !tecnico.disponible}"
+                    th:classappend="${tecnico.disponible == null or !tecnico.disponible} ? 'opacity-50 cursor-not-allowed' : ''"
+                    th:attr="data-id=${tecnico.idTecnico},data-name=${tecnico.nombres},data-apellido=${tecnico.apellidoPaterno}">
+              <span th:text="${tecnico.disponible != null and tecnico.disponible} ? 'Contactar' : 'No disponible'">Contactar</span>
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+  
+<!-- Footer -->
+  <footer id="contacto" class="bg-gray-50 border-t" style="border-color: var(--border);">
+    <div class="container mx-auto px-4 py-16">
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <!-- Company Info -->
+        <div class="space-y-4">
+          <h3 class="text-lg font-medium">HogarFix</h3>
+          <p class="text-muted-foreground">
+            HogarFix conecta personas con técnicos profesionales de confianza.
+            Soluciones para el hogar con rapidez, calidad y seguridad.
+          </p>
+          <div class="flex space-x-3">
+            <button class="btn-outline p-2">
+              <i data-lucide="facebook" class="w-4 h-4"></i>
+            </button>
+            <button class="btn-outline p-2">
+              <i data-lucide="instagram" class="w-4 h-4"></i>
+            </button>
+            <button class="btn-outline p-2">
+              <i data-lucide="message-circle" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Services -->
+        <div class="space-y-4">
+          <h4 class="font-medium">Nuestros Servicios</h4>
+          <ul class="space-y-2 text-muted-foreground">
+            <li><a href="#servicios" class="hover:text-primary transition-colors">Plomería</a></li>
+            <li><a href="#servicios" class="hover:text-primary transition-colors">Electricista</a></li>
+            <li><a href="#servicios" class="hover:text-primary transition-colors">Reparación de Electrodomésticos</a>
+            </li>
+            <li><a href="#servicios" class="hover:text-primary transition-colors">Instalaciones A/C</a></li>
+            <li><a href="#servicios" class="hover:text-primary transition-colors">Mantenimiento General</a></li>
+            <li><a href="#servicios" class="hover:text-primary transition-colors">Emergencias 24/7</a></li>
+          </ul>
+        </div>
+
+        <!-- Contact Info -->
+        <div class="space-y-4">
+          <h4 class="font-medium">Información de Contacto</h4>
+          <div class="space-y-3 text-muted-foreground">
+            <div class="flex items-start gap-3">
+              <i data-lucide="phone" class="w-5 h-5 text-primary flex-shrink-0 mt-0.5"></i>
+              <div>
+                <a href="tel:+51968459279" class="hover:text-primary transition-colors">
+                  +51 968 459 279
+                </a>
+                <p class="text-sm">WhatsApp disponible</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <i data-lucide="mail" class="w-5 h-5 text-primary flex-shrink-0 mt-0.5"></i>
+              <a href="mailto:info@hogarfix.com" class="hover:text-primary transition-colors">
+                info@hogarfix.com
+              </a>
+            </div>
+            <div class="flex items-start gap-3">
+              <i data-lucide="map-pin" class="w-5 h-5 text-primary flex-shrink-0 mt-0.5"></i>
+              <span>Lima, Perú</span>
+            </div>
+            <div class="flex items-start gap-3">
+              <i data-lucide="clock" class="w-5 h-5 text-primary flex-shrink-0 mt-0.5"></i>
+              <div>
+                <p>Lun - Vie: 8:00 AM - 6:00 PM</p>
+                <p class="text-sm">Sáb: 9:00 AM - 2:00 PM</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Contact -->
+        <div class="space-y-4">
+          <h4 class="font-medium">Consulta Rápida</h4>
+          <p class="text-muted-foreground">
+            ¿Necesitas un técnico? Escríbenos y te conectaremos con el profesional ideal.
+          </p>
+          <div class="space-y-3">
+            <input type="text" placeholder="Tu nombre" class="w-full p-3 border rounded-lg"
+              style="border-color: var(--border);">
+            <input type="email" placeholder="Tu email" class="w-full p-3 border rounded-lg"
+              style="border-color: var(--border);">
+            <input type="text" placeholder="¿En qué te podemos ayudar?" class="w-full p-3 border rounded-lg"
+              style="border-color: var(--border);">
+            <button class="btn-primary w-full">Solicitar Servicio</button>
+          </div>
+          <div class="bg-blue-50 p-4 rounded-lg">
+            <p class="text-sm text-primary font-medium">
+              🔧 ¡Evaluación gratuita disponible!
+            </p>
+            <p class="text-sm text-muted-foreground">
+              Primera consulta sin costo
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="border-t mt-12 pt-8" style="border-color: var(--border);">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+          <p class="text-muted-foreground text-center md:text-left">
+            &copy; 2025 HogarFix. Todos los derechos reservados.
+          </p>
+          <div class="flex flex-wrap gap-4 text-sm text-muted-foreground">
+            <a href="#" class="hover:text-primary transition-colors">Política de Privacidad</a>
+            <a href="#" class="hover:text-primary transition-colors">Términos y Condiciones</a>
+            <a href="#" class="hover:text-primary transition-colors">Preguntas Frecuentes</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal para contactar a un técnico (desde buscartecnicos) -->
+  <div id="service-modal-busqueda" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50" style="z-index:9999;">
+    <div class="bg-white rounded-lg w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-medium">Solicitar Servicio</h3>
+        <button id="service-modal-busqueda-close" class="text-gray-500 text-xl" aria-label="Cerrar">&times;</button>
+      </div>
+
+      <form id="service-form-busqueda" th:action="@{/servicios/solicitar}" method="post" class="space-y-4">
+        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        <input type="hidden" id="service-idTecnico" name="idTecnico" value="" />
+
+        <div>
+          <label class="block text-sm font-medium">Técnico:</label>
+          <p id="modal-tecnico-nombre" class="p-2 border rounded bg-gray-50">Nombre Técnico</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium">Especialidad:</label>
+          <select id="modal-tecnico-categoria" name="idCategoria" required class="w-full p-2 border rounded">
+            <option value="">Selecciona una especialidad...</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium">Nivel de Urgencia:</label>
+          <select id="service-urgency-b" name="urgency" required class="w-full p-2 border rounded">
+            <option value="">Selecciona...</option>
+            <option value="baja">Baja - Puedo esperar varios días</option>
+            <option value="media">Media - Necesito ayuda esta semana</option>
+            <option value="alta">Alta - Necesito ayuda hoy o mañana</option>
+            <option value="emergencia">Emergencia - Necesito ayuda inmediata</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium">Método de pago:</label>
+          <select id="service-metodopago-b" name="metodoPago" required class="w-full p-2 border rounded">
+            <option value="">Selecciona...</option>
+            <option value="tarjeta">Tarjeta / MercadoPago (en línea)</option>
+            <option value="efectivo">Efectivo (pago directo al técnico)</option>
+          </select>
+        </div>
+
+            <div class="grid md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium">Teléfono:</label>
+                <input id="service-phone-b" name="phone" type="tel" required class="w-full p-2 border rounded" placeholder="+51 9xx xxx xxx" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium">Dirección:</label>
+                <input id="service-address-b" name="address" type="text" required class="w-full p-2 border rounded" placeholder="Dirección completa" />
+              </div>
+            </div>
+
+        <div>
+          <label class="block text-sm font-medium">Fecha preferida (opcional)</label>
+          <input id="service-date-b" name="date" type="date" class="w-full p-2 border rounded" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium">Descripción:</label>
+          <textarea id="service-description-b" name="description" required rows="4" class="w-full p-2 border rounded" placeholder="Describe el problema"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" id="service-cancel-b" class="btn-outline px-4 py-2">Cancelar</button>
+          <button type="submit" class="btn-primary px-4 py-2">Enviar Solicitud</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Modal logic for buscartecnicos contact buttons
+    const modalB = document.getElementById('service-modal-busqueda');
+    const btnCloseB = document.getElementById('service-modal-busqueda-close');
+    const btnCancelB = document.getElementById('service-cancel-b');
+    const formB = document.getElementById('service-form-busqueda');
+
+    function openServiceModalB() {
+      const dateInput = document.getElementById('service-date-b');
+      if (dateInput) {
+        const today = new Date();
+        dateInput.min = today.toISOString().split('T')[0];
+      }
+      modalB.classList.remove('hidden');
+      // prevent background scroll and ensure viewport at top so modal is centered
+      document.body.style.overflow = 'hidden';
+      try { window.scrollTo(0,0); } catch(e) {}
+    }
+
+    function closeServiceModalB() {
+      modalB.classList.add('hidden');
+      document.body.style.overflow = '';
+      formB.reset();
+    }
+
+    document.querySelectorAll('.contact-btn').forEach((button) => {
+      button.addEventListener('click', function (e) {
+        e.preventDefault();
+        const id = this.getAttribute('data-id');
+        const name = this.getAttribute('data-name') || '';
+        const apellido = this.getAttribute('data-apellido') || '';
+
+        document.getElementById('modal-tecnico-nombre').textContent = name + ' ' + apellido;
+
+        const categoriaSelect = document.getElementById('modal-tecnico-categoria');
+        categoriaSelect.innerHTML = '<option value="">Selecciona una especialidad...</option>';
+        const datos = document.querySelectorAll('.categoria-data[data-tecnico-id="' + id + '"]');
+        if (datos.length === 0) {
+          const opt = document.createElement('option');
+          opt.value = '';
+          opt.textContent = 'Sin especialidad especificada';
+          categoriaSelect.appendChild(opt);
+        } else {
+          datos.forEach((el) => {
+            const opt = document.createElement('option');
+            opt.value = el.getAttribute('data-cat-id');
+            opt.textContent = el.getAttribute('data-cat-nombre');
+            categoriaSelect.appendChild(opt);
+          });
+          if (datos.length === 1) {
+            categoriaSelect.value = datos[0].getAttribute('data-cat-id');
+          }
+        }
+
+        document.getElementById('service-idTecnico').value = id;
+        openServiceModalB();
+      });
+    });
+
+    btnCloseB.addEventListener('click', closeServiceModalB);
+    btnCancelB.addEventListener('click', closeServiceModalB);
+    modalB.addEventListener('click', (e) => { if (e.target === modalB) closeServiceModalB(); });
+
+    formB.addEventListener('submit', (e) => {
+      // minimal client validation (check required fields exist and are filled)
+      const phoneEl = document.getElementById('service-phone-b');
+      const addressEl = document.getElementById('service-address-b');
+      const descEl = document.getElementById('service-description-b');
+      const phone = phoneEl ? phoneEl.value.trim() : '';
+      const address = addressEl ? addressEl.value.trim() : '';
+      const desc = descEl ? descEl.value.trim() : '';
+      if (!phone || !address || !desc) {
+        e.preventDefault();
+        alert('Por favor completa todos los campos obligatorios.');
+        return;
+      }
+      // submit normally to server
+    });
+  </script>
+
+  
+
+  <script>
+    lucide.createIcons();
+
+    // Toggle simple para el menu móvil (header)
+    function toggleMobileMenu() {
+      const menu = document.getElementById('menu-icon');
+      const close = document.getElementById('close-icon');
+      if (menu) menu.classList.toggle('hidden');
+      if (close) close.classList.toggle('hidden');
+    }
+  </script>
+</body>
+
+</html>
