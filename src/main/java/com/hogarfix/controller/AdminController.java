@@ -8,6 +8,10 @@ import com.hogarfix.service.PagoService;
 import com.hogarfix.service.ServicioService;
 import com.hogarfix.service.TecnicoService;
 import com.hogarfix.service.ClienteService;
+import com.hogarfix.service.CategoriaService;
+import com.hogarfix.repository.CategoriaRepository;
+import com.hogarfix.repository.TecnicoCategoriaRepository;
+import com.hogarfix.model.Categoria;
 import java.security.Principal;
 
 import lombok.RequiredArgsConstructor;
@@ -21,6 +25,9 @@ public class AdminController {
         private final TecnicoService tecnicoService;
         private final ClienteService clienteService;
         private final PagoService pagoService;
+        private final CategoriaService categoriaService;
+        private final CategoriaRepository categoriaRepository;
+        private final TecnicoCategoriaRepository tecnicoCategoriaRepository;
 
         @GetMapping("/dashboard")
         public String dashboard(Model model, Principal principal) {
@@ -135,6 +142,66 @@ public class AdminController {
                         redirectAttributes.addFlashAttribute("mensajeError", ex.getMessage());
                 }
                 return "redirect:" + paginaOrigenSegura(referer, "/admin/tecnicos");
+        }
+
+        // ---------- Especialidades (categorías) ----------
+
+        @GetMapping("/categorias")
+        public String verCategorias(Model model, Principal principal) {
+                if (principal == null) {
+                        return "redirect:/auth/login";
+                }
+                var filas = categoriaService.listarCategorias().stream()
+                                .sorted(java.util.Comparator.comparing(Categoria::getNombre, String.CASE_INSENSITIVE_ORDER))
+                                .map(c -> java.util.Map.<String, Object>of(
+                                                "id", c.getIdCategoria(),
+                                                "nombre", c.getNombre(),
+                                                "tecnicos", tecnicoCategoriaRepository.findByCategoria(c).size()))
+                                .toList();
+                model.addAttribute("categorias", filas);
+                return "admin/categorias";
+        }
+
+        @org.springframework.web.bind.annotation.PostMapping("/categorias")
+        public String crearCategoria(@org.springframework.web.bind.annotation.RequestParam String nombre,
+                        Principal principal,
+                        org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
+                if (principal == null) {
+                        return "redirect:/auth/login";
+                }
+                String limpio = nombre == null ? "" : nombre.trim().replaceAll("\\s+", " ");
+                if (limpio.length() < 2 || limpio.length() > 100) {
+                        redirectAttributes.addFlashAttribute("mensajeError",
+                                        "El nombre debe tener entre 2 y 100 caracteres.");
+                } else if (categoriaRepository.existsByNombreIgnoreCase(limpio)) {
+                        redirectAttributes.addFlashAttribute("mensajeError",
+                                        "Ya existe una especialidad llamada \"" + limpio + "\".");
+                } else {
+                        categoriaService.registrarCategoria(Categoria.builder().nombre(limpio).build());
+                        redirectAttributes.addFlashAttribute("mensajeExito",
+                                        "Especialidad \"" + limpio + "\" creada correctamente.");
+                }
+                return "redirect:/admin/categorias";
+        }
+
+        @org.springframework.web.bind.annotation.PostMapping("/categorias/{id}/eliminar")
+        public String eliminarCategoria(@org.springframework.web.bind.annotation.PathVariable Long id,
+                        Principal principal,
+                        org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
+                if (principal == null) {
+                        return "redirect:/auth/login";
+                }
+                var categoria = categoriaService.buscarPorId(id);
+                if (categoria.isEmpty()) {
+                        redirectAttributes.addFlashAttribute("mensajeError", "La especialidad no existe.");
+                } else if (!tecnicoCategoriaRepository.findByCategoria(categoria.get()).isEmpty()) {
+                        redirectAttributes.addFlashAttribute("mensajeError",
+                                        "No se puede eliminar: hay técnicos que usan esta especialidad.");
+                } else {
+                        categoriaService.eliminarCategoria(id);
+                        redirectAttributes.addFlashAttribute("mensajeExito", "Especialidad eliminada.");
+                }
+                return "redirect:/admin/categorias";
         }
 
         // Solo permite volver a páginas internas conocidas del admin (evita redirects abiertos)

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Menú lateral del administrador. Uso: th:replace="~{fragments/admin-sidebar :: sidebar('clientes')}" -->
+<aside th:fragment="sidebar(activo)" class="admin-sidebar">
+  <style>
+    .admin-sidebar { position: fixed; top: 65px; left: 0; bottom: 0; width: 230px; background: #fff;
+      border-right: 1px solid var(--border); padding: 1.25rem 0.75rem; overflow-y: auto; z-index: 40; }
+    .admin-sidebar .side-title { font-size: .7rem; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--muted-foreground); padding: 0 .75rem; margin-bottom: .5rem; }
+    .admin-sidebar a { display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+      padding: .65rem .75rem; margin-bottom: .25rem; border-radius: .6rem; font-size: .95rem;
+      color: var(--foreground); text-decoration: none; transition: background .15s; }
+    .admin-sidebar a:hover { background: var(--muted); }
+    .admin-sidebar a.active { background: var(--primary); color: #fff; }
+    .admin-sidebar .side-badge { background: #fef3c7; color: #92400e; font-size: .7rem; font-weight: 600;
+      padding: .1rem .5rem; border-radius: 999px; }
+    .admin-main { padding-left: 230px; }
+    @media (max-width: 767px) {
+      .admin-sidebar { position: static; width: 100%; display: flex; gap: .25rem; overflow-x: auto;
+        border-right: 0; border-bottom: 1px solid var(--border); padding: .5rem; }
+      .admin-sidebar .side-title { display: none; }
+      .admin-sidebar a { white-space: nowrap; margin-bottom: 0; }
+      .admin-main { padding-left: 0; }
+    }
+  </style>
+  <p class="side-title">Administración</p>
+  <a th:href="@{/admin/dashboard}" th:classappend="${activo == 'dashboard'} ? 'active'">Resumen</a>
+  <a th:href="@{/admin/clientes}" th:classappend="${activo == 'clientes'} ? 'active'">Clientes</a>
+  <a th:href="@{/admin/tecnicos}" th:classappend="${activo == 'tecnicos'} ? 'active'">Técnicos</a>
+  <a th:href="@{/admin/categorias}" th:classappend="${activo == 'categorias'} ? 'active'">Especialidades</a>
+  <a th:href="@{/admin/pagos}" th:classappend="${activo == 'pagos'} ? 'active'">Pagos</a>
+  <a th:href="@{/admin/certificados}" th:classappend="${activo == 'certificados'} ? 'active'">
+    <span>Certificados</span>
+    <span th:if="${certificadosPendientesCount != null and certificadosPendientesCount > 0}"
+          class="side-badge" th:text="${certificadosPendientesCount}">0</span>
+  </a>
+</aside>
+</body>
+</html>

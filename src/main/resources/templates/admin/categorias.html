@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Especialidades')}"></head>
+<body class="bg-muted/20" style="background-color: rgba(236,236,240,0.25);">
+  <header th:replace="~{fragments/navbar :: navbar}"></header>
+  <aside th:replace="~{fragments/admin-sidebar :: sidebar('categorias')}"></aside>
+
+  <div class="min-h-screen flex flex-col admin-main">
+    <main class="flex-1 container mx-auto px-4 py-10" style="max-width: 760px;">
+      <h2 class="text-2xl font-medium mb-2">Especialidades</h2>
+      <p class="text-sm mb-6" style="color: var(--muted-foreground);">
+        Son los servicios que los técnicos eligen al registrarse. Las que crees aquí aparecen en el formulario al instante.
+      </p>
+
+      <div th:if="${mensajeExito}" class="text-sm mb-4 p-3 rounded-lg" style="background:#dcfce7; color:#166534;">
+        <span th:text="${mensajeExito}">Listo</span>
+      </div>
+      <div th:if="${mensajeError}" class="text-sm mb-4 p-3 rounded-lg" style="background:#fee2e2; color:#991b1b;">
+        <span th:text="${mensajeError}">Error</span>
+      </div>
+
+      <form th:action="@{/admin/categorias}" method="post" class="card mb-6">
+        <label class="form-label" for="nombre">Nueva especialidad</label>
+        <div class="flex flex-wrap gap-3">
+          <input type="text" id="nombre" name="nombre" minlength="2" maxlength="100" required
+                 placeholder="Ej: Cerrajería, Jardinería, Pintura..."
+                 class="form-input" style="flex:1; min-width:220px;" />
+          <button type="submit" class="btn-primary">Agregar</button>
+        </div>
+      </form>
+
+      <div class="card overflow-x-auto p-0">
+        <table class="table-clean">
+          <thead>
+            <tr>
+              <th>Especialidad</th>
+              <th>Técnicos</th>
+              <th style="width:1%;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="c : ${categorias}">
+              <td th:text="${c.nombre}">-</td>
+              <td th:text="${c.tecnicos}">0</td>
+              <td>
+                <form th:action="@{/admin/categorias/{id}/eliminar(id=${c.id})}" method="post"
+                      onsubmit="return confirm('¿Eliminar esta especialidad?');">
+                  <button type="submit" class="btn-danger-outline btn-sm"
+                          th:disabled="${c.tecnicos > 0}"
+                          th:title="${c.tecnicos > 0} ? 'En uso por técnicos, no se puede eliminar' : 'Eliminar'">Eliminar</button>
+                </form>
+              </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(categorias)}">
+              <td colspan="3" class="text-sm" style="color: var(--muted-foreground);">Aún no hay especialidades.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+  </div>
+</body>
+</html>
