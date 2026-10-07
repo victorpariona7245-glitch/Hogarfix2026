@@ -4,6 +4,9 @@
 <!-- Menú lateral del administrador. Uso: th:replace="~{fragments/admin-sidebar :: sidebar('clientes')}" -->
 <aside th:fragment="sidebar(activo)" class="admin-sidebar">
   <style>
+    /* La barra superior queda fija (el overflow-x:hidden global rompe el "sticky") */
+    body { padding-top: 65px; }
+    header.sticky { position: fixed; top: 0; left: 0; right: 0; }
     .admin-sidebar { position: fixed; top: 65px; left: 0; bottom: 0; width: 230px; background: #fff;
       border-right: 1px solid var(--border); padding: 1.25rem 0.75rem; overflow-y: auto; z-index: 40; }
     .admin-sidebar .side-title { font-size: .7rem; letter-spacing: .08em; text-transform: uppercase;
@@ -39,6 +42,21 @@
     <span th:if="${certificadosPendientesCount != null and certificadosPendientesCount > 0}"
           class="side-badge" th:text="${certificadosPendientesCount}">0</span>
   </a>
+  <script>
+    // Ajusta el menú y el contenido a la altura real de la barra superior
+    (function () {
+      function ajustar() {
+        var h = document.querySelector('header');
+        var alto = h ? h.offsetHeight : 65;
+        document.body.style.paddingTop = alto + 'px';
+        var side = document.querySelector('.admin-sidebar');
+        if (side && window.innerWidth >= 768) side.style.top = alto + 'px';
+      }
+      window.addEventListener('load', ajustar);
+      window.addEventListener('resize', ajustar);
+      ajustar();
+    })();
+  </script>
 </aside>
 </body>
 </html>
