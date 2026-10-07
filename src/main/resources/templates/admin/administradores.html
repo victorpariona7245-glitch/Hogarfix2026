@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Administradores')}"></head>
+<body class="bg-muted/20" style="background-color: rgba(236,236,240,0.25);">
+  <header th:replace="~{fragments/navbar :: navbar}"></header>
+  <aside th:replace="~{fragments/admin-sidebar :: sidebar('administradores')}"></aside>
+
+  <div class="min-h-screen flex flex-col admin-main">
+    <main class="flex-1 container mx-auto px-4 py-10" style="max-width: 760px;">
+      <h2 class="text-2xl font-medium mb-2">Administradores</h2>
+      <p class="text-sm mb-6" style="color: var(--muted-foreground);">
+        Crea cuentas con acceso completo al panel. Solo tú, como administrador principal, ves esta sección.
+      </p>
+
+      <div th:if="${mensajeExito}" class="text-sm mb-4 p-3 rounded-lg" style="background:#dcfce7; color:#166534;">
+        <span th:text="${mensajeExito}">Listo</span>
+      </div>
+      <div th:if="${mensajeError}" class="text-sm mb-4 p-3 rounded-lg" style="background:#fee2e2; color:#991b1b;">
+        <span th:text="${mensajeError}">Error</span>
+      </div>
+
+      <form th:action="@{/admin/administradores}" method="post" class="card mb-6" autocomplete="off">
+        <h3 class="text-sm font-medium mb-3 text-primary">Nuevo administrador</h3>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label" for="email">Correo electrónico</label>
+            <input type="email" id="email" name="email" maxlength="100" required class="form-input" />
+          </div>
+          <div>
+            <label class="form-label" for="username">Nombre de usuario</label>
+            <input type="text" id="username" name="username" minlength="3" maxlength="50" required class="form-input" />
+          </div>
+          <div>
+            <label class="form-label" for="password">Contraseña</label>
+            <input type="password" id="password" name="password" minlength="8" maxlength="100" required class="form-input" />
+            <p class="form-hint">Mínimo 8 caracteres</p>
+          </div>
+          <div>
+            <label class="form-label" for="confirmar">Repetir contraseña</label>
+            <input type="password" id="confirmar" name="confirmar" minlength="8" maxlength="100" required class="form-input" />
+          </div>
+        </div>
+        <button type="submit" class="btn-primary mt-4">Crear administrador</button>
+      </form>
+
+      <div class="card overflow-x-auto p-0">
+        <table class="table-clean">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Correo</th>
+              <th style="width:1%;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="a : ${admins}">
+              <td>
+                <span th:text="${a.username}">admin</span>
+                <span th:if="${#strings.equalsIgnoreCase(a.email, emailPrincipal)}"
+                      class="badge-soft" style="margin-left:.4rem;">Principal</span>
+              </td>
+              <td th:text="${a.email}">-</td>
+              <td>
+                <form th:unless="${#strings.equalsIgnoreCase(a.email, emailPrincipal)}"
+                      th:action="@{/admin/administradores/{id}/eliminar(id=${a.idUsuario})}" method="post"
+                      onsubmit="return confirm('¿Eliminar este administrador?');">
+                  <button type="submit" class="btn-danger-outline btn-sm">Eliminar</button>
+                </form>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+  </div>
+</body>
+</html>
