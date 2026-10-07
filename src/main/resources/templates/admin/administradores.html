@@ -24,20 +24,20 @@
         <div class="grid md:grid-cols-2 gap-4">
           <div>
             <label class="form-label" for="email">Correo electrónico</label>
-            <input type="email" id="email" name="email" maxlength="100" required class="form-input" />
+            <input type="email" id="email" name="email" maxlength="100" required class="form-input" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" />
           </div>
           <div>
             <label class="form-label" for="username">Nombre de usuario</label>
-            <input type="text" id="username" name="username" minlength="3" maxlength="50" required class="form-input" />
+            <input type="text" id="username" name="username" minlength="3" maxlength="50" required class="form-input" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" />
           </div>
           <div>
             <label class="form-label" for="password">Contraseña</label>
-            <input type="password" id="password" name="password" minlength="8" maxlength="100" required class="form-input" />
+            <input type="password" id="password" name="password" minlength="8" maxlength="100" required class="form-input" autocomplete="new-password" />
             <p class="form-hint">Mínimo 8 caracteres</p>
           </div>
           <div>
             <label class="form-label" for="confirmar">Repetir contraseña</label>
-            <input type="password" id="confirmar" name="confirmar" minlength="8" maxlength="100" required class="form-input" />
+            <input type="password" id="confirmar" name="confirmar" minlength="8" maxlength="100" required class="form-input" autocomplete="new-password" />
           </div>
         </div>
         <button type="submit" class="btn-primary mt-4">Crear administrador</button>
@@ -61,11 +61,10 @@
               </td>
               <td th:text="${a.email}">-</td>
               <td>
-                <form th:unless="${#strings.equalsIgnoreCase(a.email, emailPrincipal)}"
-                      th:action="@{/admin/administradores/{id}/eliminar(id=${a.idUsuario})}" method="post"
-                      onsubmit="return confirm('¿Eliminar este administrador?');">
-                  <button type="submit" class="btn-danger-outline btn-sm">Eliminar</button>
-                </form>
+                <button type="button" class="btn-danger-outline btn-sm"
+                        th:unless="${#strings.equalsIgnoreCase(a.email, emailPrincipal)}"
+                        th:attr="data-id=${a.idUsuario}, data-email=${a.email}"
+                        onclick="abrirEliminar(this)">Eliminar</button>
               </td>
             </tr>
           </tbody>
@@ -74,5 +73,39 @@
     </main>
     <footer th:replace="~{fragments/footer :: footer}"></footer>
   </div>
+
+  <!-- Ventana de confirmación para eliminar -->
+  <div id="modal-eliminar" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; align-items:center; justify-content:center; padding:1rem;">
+    <form id="form-eliminar" th:action="@{/admin/administradores/0/eliminar}" method="post" autocomplete="off"
+          class="card" style="max-width:420px; width:100%; background:#fff;">
+      <h3 class="text-lg font-medium mb-2">¿Seguro que quieres eliminar?</h3>
+      <p class="text-sm mb-4" style="color: var(--muted-foreground);">
+        Se eliminará al administrador <strong id="modal-email"></strong>. Esta acción no se puede deshacer.
+      </p>
+      <label class="form-label" for="passwordPrincipal">Tu contraseña de administrador principal</label>
+      <input type="password" id="passwordPrincipal" name="passwordPrincipal" required class="form-input" autocomplete="new-password" />
+      <div class="flex gap-3 mt-4" style="justify-content:flex-end;">
+        <button type="button" class="btn-outline" onclick="cerrarEliminar()">Cancelar</button>
+        <button type="submit" class="btn-primary" style="background:#d4183d;">Sí, eliminar</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    var modal = document.getElementById('modal-eliminar');
+    var formEliminar = document.getElementById('form-eliminar');
+    var accionBase = formEliminar.getAttribute('action');
+
+    function abrirEliminar(btn) {
+      formEliminar.setAttribute('action', accionBase.replace('/0/eliminar', '/' + btn.dataset.id + '/eliminar'));
+      document.getElementById('modal-email').textContent = btn.dataset.email;
+      document.getElementById('passwordPrincipal').value = '';
+      modal.style.display = 'flex';
+      document.getElementById('passwordPrincipal').focus();
+    }
+    function cerrarEliminar() { modal.style.display = 'none'; }
+    modal.addEventListener('click', function (e) { if (e.target === modal) cerrarEliminar(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrarEliminar(); });
+  </script>
 </body>
 </html>

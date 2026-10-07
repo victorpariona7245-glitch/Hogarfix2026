@@ -44,16 +44,20 @@ public class AdminUsuariosController {
                 : adminEmailConfig.trim();
     }
 
-    private boolean esPrincipal(Principal principal) {
+    private java.util.Optional<Usuario> usuarioPrincipal(Principal principal) {
         if (principal == null) {
-            return false;
+            return java.util.Optional.empty();
         }
         String nombre = principal.getName();
         var usuario = usuarioRepository.findByEmail(nombre);
         if (usuario.isEmpty()) {
             usuario = usuarioRepository.findByUsername(nombre);
         }
-        return usuario.isPresent() && usuario.get().getEmail().equalsIgnoreCase(emailPrincipal());
+        return usuario.filter(u -> u.getEmail().equalsIgnoreCase(emailPrincipal()));
+    }
+
+    private boolean esPrincipal(Principal principal) {
+        return usuarioPrincipal(principal).isPresent();
     }
 
     @GetMapping
@@ -118,12 +122,19 @@ public class AdminUsuariosController {
     }
 
     @PostMapping("/{id}/eliminar")
-    public String eliminar(@PathVariable Long id, Principal principal, RedirectAttributes ra) {
+    public String eliminar(@PathVariable Long id,
+            @RequestParam(defaultValue = "") String passwordPrincipal,
+            Principal principal, RedirectAttributes ra) {
         if (principal == null) {
             return "redirect:/auth/login";
         }
-        if (!esPrincipal(principal)) {
+        var principalUsuario = usuarioPrincipal(principal);
+        if (principalUsuario.isEmpty()) {
             return "redirect:/admin/dashboard";
+        }
+        if (!passwordEncoder.matches(passwordPrincipal, principalUsuario.get().getPassword())) {
+            ra.addFlashAttribute("mensajeError", "Contraseña incorrecta. No se eliminó al administrador.");
+            return "redirect:/admin/administradores";
         }
 
         var admin = usuarioRepository.findByRol_NombreIgnoreCase("ADMIN").stream()
