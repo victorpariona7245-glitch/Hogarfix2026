@@ -10,7 +10,19 @@
     />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="/css/styles.css" rel="stylesheet" />
-    <style>body { font-family: "Inter", sans-serif; }</style>
+        <style>
+      body { font-family: "Inter", sans-serif; }
+      .chips { display:flex; flex-wrap:wrap; gap:0.5rem; }
+      .chip { position:relative; cursor:pointer; }
+      .chip input { position:absolute; opacity:0; inset:0; cursor:pointer; }
+      .chip span { display:inline-block; padding:0.55rem 1rem; border:1.5px solid rgba(0,0,0,0.15);
+        border-radius:999px; font-size:0.9rem; background:#fff; transition:all .15s; user-select:none; }
+      .chip:hover span { border-color: var(--primary); }
+      .chip input:checked + span { background: var(--primary); color:#fff; border-color: var(--primary); }
+      .chip input:checked + span::before { content:"\2713\00a0"; }
+      .chip input:focus-visible + span { outline:2px solid #6366f1; outline-offset:2px; }
+      .chips.invalid .chip span { border-color:#dc2626; }
+    </style>
   </head>
   <body class="min-h-screen auth-gradient py-10">
     <div class="w-full max-w-3xl mx-auto px-4">
@@ -114,16 +126,16 @@
           <div>
             <h3 class="text-sm font-medium mb-3 text-primary">Perfil profesional</h3>
             <div>
-              <label class="form-label">Categorías</label>
-              <select name="categoriaIds" multiple size="5" class="form-select" required>
-                <option
-                  th:each="cat : ${categorias}"
-                  th:value="${cat.idCategoria}"
-                  th:text="${cat.nombre}"
-                  th:selected="${tecnico.categorias != null and tecnico.categorias.contains(cat)}"
-                ></option>
-              </select>
-              <p class="form-hint">Mantenga presionado CTRL (Windows) o CMD (Mac) para seleccionar varias.</p>
+              <label class="form-label">¿Qué servicios ofreces?</label>
+              <p class="form-hint" style="margin-bottom:0.5rem;">Toca los que correspondan. Puedes elegir varios.</p>
+              <div id="categorias-chips" class="chips">
+                <label class="chip" th:each="cat : ${categorias}">
+                  <input type="checkbox" name="categoriaIds" th:value="${cat.idCategoria}"
+                         th:checked="${tecnico.categorias != null and tecnico.categorias.contains(cat)}" />
+                  <span th:text="${cat.nombre}"></span>
+                </label>
+              </div>
+              <p id="categorias-error" class="text-xs mt-1" style="color:#dc2626; display:none;">Elige al menos un servicio.</p>
               <p th:if="${#lists.isEmpty(categorias)}" class="text-xs mt-1" style="color:#dc2626;">No hay categorías disponibles. Contacte al administrador.</p>
             </div>
 
@@ -131,11 +143,12 @@
               <div>
                 <label class="form-label">Certificado (PDF)</label>
                 <input type="file" name="certificadoPdfFile" accept="application/pdf" class="form-input" required />
+                <p class="form-hint">Sube tu certificado o constancia en PDF.</p>
               </div>
               <div>
                 <label class="form-label">Foto de perfil</label>
                 <input type="file" name="fotoPerfilFile" accept="image/png, image/jpeg" class="form-input" />
-                <p class="form-hint">Formatos aceptados: PNG, JPG/JPEG. Opcional.</p>
+                <p class="form-hint">PNG o JPG. Opcional, pero ayuda a que los clientes confíen en ti.</p>
               </div>
             </div>
           </div>
@@ -149,5 +162,17 @@
         </p>
       </div>
     </div>
+    <script>
+      // Exige al menos un servicio sin obligar a marcarlos todos
+      document.querySelector("form").addEventListener("submit", function (e) {
+        var hay = document.querySelectorAll('#categorias-chips input:checked').length > 0;
+        document.getElementById("categorias-error").style.display = hay ? "none" : "block";
+        document.getElementById("categorias-chips").classList.toggle("invalid", !hay);
+        if (!hay) {
+          e.preventDefault();
+          document.getElementById("categorias-chips").scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      });
+    </script>
   </body>
 </html>
