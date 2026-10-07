@@ -14,12 +14,17 @@
             Resumen de <strong th:text="${mesTexto}" style="text-transform:capitalize;">octubre 2026</strong>
           </p>
         </div>
-        <form th:action="@{/admin/reportes}" method="get" class="flex items-end gap-2">
+        <form th:action="@{/admin/reportes}" method="get" class="flex flex-wrap items-end gap-2">
           <div>
             <label class="form-label" for="mes">Mes</label>
             <input type="month" id="mes" name="mes" th:value="${mes}" class="form-input" />
           </div>
+          <div>
+            <label class="form-label" for="q">Buscar especialidad</label>
+            <input type="search" id="q" name="q" th:value="${q}" placeholder="Ej: electricista" class="form-input" autocomplete="off" />
+          </div>
           <button type="submit" class="btn-primary">Ver</button>
+          <a th:if="${q != null and q != ''}" th:href="@{/admin/reportes(mes=${mes})}" class="btn-outline">Limpiar</a>
         </form>
       </div>
 
@@ -46,7 +51,17 @@
         </div>
       </div>
 
-      <h3 class="text-lg font-medium mb-3">Por especialidad</h3>
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <h3 class="text-lg font-medium">
+          Por especialidad
+          <span th:if="${q != null and q != ''}" class="text-sm" style="color: var(--muted-foreground); font-weight:400;"
+                th:text="${'(filtrado: &quot;' + q + '&quot;)'}"></span>
+        </h3>
+        <div class="flex items-center gap-2">
+          <a th:href="@{/admin/reportes/exportar.csv(mes=${mes},q=${q})}" class="btn-outline btn-sm">⬇ Exportar CSV</a>
+          <a th:href="@{/admin/reportes/exportar.xlsx(mes=${mes},q=${q})}" class="btn-primary btn-sm">⬇ Exportar Excel</a>
+        </div>
+      </div>
       <div class="card overflow-x-auto p-0">
         <table class="table-clean">
           <thead>
@@ -70,7 +85,7 @@
             </tr>
             <tr th:if="${#lists.isEmpty(filas)}">
               <td colspan="6" class="text-sm" style="color: var(--muted-foreground);">
-                No hubo servicios ni pagos en este mes.
+                No hay resultados para este mes y búsqueda.
               </td>
             </tr>
           </tbody>
