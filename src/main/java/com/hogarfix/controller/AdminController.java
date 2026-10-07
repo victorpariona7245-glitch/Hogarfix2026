@@ -12,6 +12,8 @@ import com.hogarfix.service.CategoriaService;
 import com.hogarfix.repository.CategoriaRepository;
 import com.hogarfix.repository.TecnicoCategoriaRepository;
 import com.hogarfix.model.Categoria;
+import com.hogarfix.repository.UsuarioRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import java.security.Principal;
 
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,8 @@ public class AdminController {
         private final CategoriaService categoriaService;
         private final CategoriaRepository categoriaRepository;
         private final TecnicoCategoriaRepository tecnicoCategoriaRepository;
+        private final UsuarioRepository usuarioRepository;
+        private final PasswordEncoder passwordEncoder;
 
         @GetMapping("/dashboard")
         public String dashboard(Model model, Principal principal) {
@@ -186,10 +190,18 @@ public class AdminController {
 
         @org.springframework.web.bind.annotation.PostMapping("/categorias/{id}/eliminar")
         public String eliminarCategoria(@org.springframework.web.bind.annotation.PathVariable Long id,
+                        @org.springframework.web.bind.annotation.RequestParam(defaultValue = "") String password,
                         Principal principal,
                         org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
                 if (principal == null) {
                         return "redirect:/auth/login";
+                }
+                var actual = usuarioRepository.findByEmail(principal.getName())
+                                .or(() -> usuarioRepository.findByUsername(principal.getName()));
+                if (actual.isEmpty() || !passwordEncoder.matches(password, actual.get().getPassword())) {
+                        redirectAttributes.addFlashAttribute("mensajeError",
+                                        "Contraseña incorrecta. No se eliminó la especialidad.");
+                        return "redirect:/admin/categorias";
                 }
                 var categoria = categoriaService.buscarPorId(id);
                 if (categoria.isEmpty()) {

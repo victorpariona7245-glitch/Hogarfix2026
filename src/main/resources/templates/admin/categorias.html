@@ -29,6 +29,11 @@
         </div>
       </form>
 
+      <div class="mb-3">
+        <input type="search" id="buscar-especialidad" placeholder="Buscar especialidad..."
+               class="form-input" style="max-width:360px;" autocomplete="off" />
+      </div>
+
       <div class="card overflow-x-auto p-0">
         <table class="table-clean">
           <thead>
@@ -38,18 +43,20 @@
               <th style="width:1%;"></th>
             </tr>
           </thead>
-          <tbody>
-            <tr th:each="c : ${categorias}">
+          <tbody id="tabla-especialidades">
+            <tr th:each="c : ${categorias}" class="fila-especialidad" th:attr="data-nombre=${c.nombre}">
               <td th:text="${c.nombre}">-</td>
               <td th:text="${c.tecnicos}">0</td>
               <td>
-                <form th:action="@{/admin/categorias/{id}/eliminar(id=${c.id})}" method="post"
-                      onsubmit="return confirm('¿Eliminar esta especialidad?');">
-                  <button type="submit" class="btn-danger-outline btn-sm"
-                          th:disabled="${c.tecnicos > 0}"
-                          th:title="${c.tecnicos > 0} ? 'En uso por técnicos, no se puede eliminar' : 'Eliminar'">Eliminar</button>
-                </form>
+                <button type="button" class="btn-danger-outline btn-sm"
+                        th:disabled="${c.tecnicos > 0}"
+                        th:attr="data-id=${c.id}, data-nombre=${c.nombre}"
+                        th:title="${c.tecnicos > 0} ? 'En uso por técnicos, no se puede eliminar' : 'Eliminar'"
+                        onclick="abrirEliminar(this)">Eliminar</button>
               </td>
+            </tr>
+            <tr id="sin-resultados" style="display:none;">
+              <td colspan="3" class="text-sm" style="color: var(--muted-foreground);">Ninguna especialidad coincide con la búsqueda.</td>
             </tr>
             <tr th:if="${#lists.isEmpty(categorias)}">
               <td colspan="3" class="text-sm" style="color: var(--muted-foreground);">Aún no hay especialidades.</td>
@@ -60,5 +67,52 @@
     </main>
     <footer th:replace="~{fragments/footer :: footer}"></footer>
   </div>
+
+  <!-- Ventana de confirmación para eliminar -->
+  <div id="modal-eliminar" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; align-items:center; justify-content:center; padding:1rem;">
+    <form id="form-eliminar" th:action="@{/admin/categorias/0/eliminar}" method="post" autocomplete="off"
+          class="card" style="max-width:420px; width:100%; background:#fff;">
+      <h3 class="text-lg font-medium mb-2">¿Seguro que quieres eliminar?</h3>
+      <p class="text-sm mb-4" style="color: var(--muted-foreground);">
+        Se eliminará la especialidad <strong id="modal-nombre"></strong>. Esta acción no se puede deshacer.
+      </p>
+      <label class="form-label" for="password-confirmar">Tu contraseña de administrador</label>
+      <input type="password" id="password-confirmar" name="password" required class="form-input" autocomplete="new-password" />
+      <div class="flex gap-3 mt-4" style="justify-content:flex-end;">
+        <button type="button" class="btn-outline" onclick="cerrarEliminar()">Cancelar</button>
+        <button type="submit" class="btn-primary" style="background:#d4183d;">Sí, eliminar</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    // Buscador en vivo (ignora mayúsculas y tildes)
+    function norm(t) { return (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); }
+    var buscador = document.getElementById('buscar-especialidad');
+    buscador.addEventListener('input', function () {
+      var q = norm(buscador.value), visibles = 0;
+      document.querySelectorAll('.fila-especialidad').forEach(function (tr) {
+        var ok = norm(tr.dataset.nombre).indexOf(q) !== -1;
+        tr.style.display = ok ? '' : 'none';
+        if (ok) visibles++;
+      });
+      document.getElementById('sin-resultados').style.display = visibles === 0 ? '' : 'none';
+    });
+
+    // Ventana de confirmación
+    var modal = document.getElementById('modal-eliminar');
+    var formEliminar = document.getElementById('form-eliminar');
+    var accionBase = formEliminar.getAttribute('action');
+    function abrirEliminar(btn) {
+      formEliminar.setAttribute('action', accionBase.replace('/0/eliminar', '/' + btn.dataset.id + '/eliminar'));
+      document.getElementById('modal-nombre').textContent = btn.dataset.nombre;
+      document.getElementById('password-confirmar').value = '';
+      modal.style.display = 'flex';
+      document.getElementById('password-confirmar').focus();
+    }
+    function cerrarEliminar() { modal.style.display = 'none'; }
+    modal.addEventListener('click', function (e) { if (e.target === modal) cerrarEliminar(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrarEliminar(); });
+  </script>
 </body>
 </html>
