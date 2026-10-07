@@ -26,6 +26,7 @@
   </style>
   <p class="side-title">Administración</p>
   <a th:href="@{/admin/dashboard}" th:classappend="${activo == 'dashboard'} ? 'active'">Resumen</a>
+  <a th:href="@{/admin/reportes}" th:classappend="${activo == 'reportes'} ? 'active'">Reporte mensual</a>
   <a th:href="@{/admin/clientes}" th:classappend="${activo == 'clientes'} ? 'active'">Clientes</a>
   <a th:href="@{/admin/tecnicos}" th:classappend="${activo == 'tecnicos'} ? 'active'">Técnicos</a>
   <a th:href="@{/admin/categorias}" th:classappend="${activo == 'categorias'} ? 'active'">Especialidades</a>

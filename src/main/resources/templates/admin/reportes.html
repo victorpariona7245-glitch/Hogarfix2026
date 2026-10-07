@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Reporte mensual')}"></head>
+<body class="bg-muted/20" style="background-color: rgba(236,236,240,0.25);">
+  <header th:replace="~{fragments/navbar :: navbar}"></header>
+  <aside th:replace="~{fragments/admin-sidebar :: sidebar('reportes')}"></aside>
+
+  <div class="min-h-screen flex flex-col admin-main">
+    <main class="flex-1 container mx-auto px-4 py-10">
+      <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-2xl font-medium">Reporte mensual</h2>
+          <p class="text-sm" style="color: var(--muted-foreground);">
+            Resumen de <strong th:text="${mesTexto}" style="text-transform:capitalize;">octubre 2026</strong>
+          </p>
+        </div>
+        <form th:action="@{/admin/reportes}" method="get" class="flex items-end gap-2">
+          <div>
+            <label class="form-label" for="mes">Mes</label>
+            <input type="month" id="mes" name="mes" th:value="${mes}" class="form-input" />
+          </div>
+          <button type="submit" class="btn-primary">Ver</button>
+        </form>
+      </div>
+
+      <div class="grid md:grid-cols-4 gap-4 mb-8">
+        <div class="card text-center">
+          <h5 class="text-sm text-muted-foreground mb-2">Servicios solicitados</h5>
+          <p class="text-3xl font-semibold text-primary" th:text="${totSolicitados}">0</p>
+        </div>
+        <div class="card text-center">
+          <h5 class="text-sm text-muted-foreground mb-2">Servicios atendidos</h5>
+          <p class="text-3xl font-semibold" style="color:#16a34a" th:text="${totAtendidos}">0</p>
+          <p class="text-xs" style="color: var(--muted-foreground);">
+            <span th:text="${totFinalizados}">0</span> ya finalizados
+          </p>
+        </div>
+        <div class="card text-center">
+          <h5 class="text-sm text-muted-foreground mb-2">Técnicos que atendieron</h5>
+          <p class="text-3xl font-semibold" style="color:#2563eb" th:text="${totTecnicos}">0</p>
+        </div>
+        <div class="card text-center">
+          <h5 class="text-sm text-muted-foreground mb-2">Monto generado</h5>
+          <p class="text-3xl font-semibold" style="color:#d97706"
+             th:text="${'S/ ' + #numbers.formatDecimal(montoTotal, 1, 'COMMA', 2, 'POINT')}">S/ 0.00</p>
+        </div>
+      </div>
+
+      <h3 class="text-lg font-medium mb-3">Por especialidad</h3>
+      <div class="card overflow-x-auto p-0">
+        <table class="table-clean">
+          <thead>
+            <tr>
+              <th>Especialidad</th>
+              <th>Solicitados</th>
+              <th>Atendidos</th>
+              <th>Finalizados</th>
+              <th>Técnicos</th>
+              <th>Monto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="f : ${filas}">
+              <td th:text="${f.especialidad}">-</td>
+              <td th:text="${f.solicitados}">0</td>
+              <td th:text="${f.atendidos}">0</td>
+              <td th:text="${f.finalizados}">0</td>
+              <td th:text="${f.tecnicos}">0</td>
+              <td th:text="${'S/ ' + #numbers.formatDecimal(f.monto, 1, 'COMMA', 2, 'POINT')}">S/ 0.00</td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(filas)}">
+              <td colspan="6" class="text-sm" style="color: var(--muted-foreground);">
+                No hubo servicios ni pagos en este mes.
+              </td>
+            </tr>
+          </tbody>
+          <tfoot th:if="${not #lists.isEmpty(filas)}">
+            <tr style="font-weight:600;">
+              <td>Total</td>
+              <td th:text="${totSolicitados}">0</td>
+              <td th:text="${totAtendidos}">0</td>
+              <td th:text="${totFinalizados}">0</td>
+              <td th:text="${totTecnicos}">0</td>
+              <td th:text="${'S/ ' + #numbers.formatDecimal(montoTotal, 1, 'COMMA', 2, 'POINT')}">S/ 0.00</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <p class="text-xs mt-4" style="color: var(--muted-foreground);">
+        <strong>Atendidos:</strong> servicios que un técnico aceptó (en proceso o finalizados).
+        <strong>Técnicos:</strong> técnicos distintos que atendieron en esa especialidad; el total no repite a quien trabajó en varias.
+        <strong>Monto:</strong> pagos con estado PAGADO registrados en el mes.
+      </p>
+    </main>
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+  </div>
+</body>
+</html>

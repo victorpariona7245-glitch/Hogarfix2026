@@ -19,4 +19,9 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
             "AND p.fechaPago >= :desde")
     java.math.BigDecimal sumMontoPagadoPorTecnicoDesde(@Param("idTecnico") Long idTecnico,
             @Param("desde") LocalDateTime desde);
+
+    @Query("SELECT p FROM Pago p JOIN FETCH p.servicio s JOIN FETCH s.categoria " +
+            "WHERE p.estado = 'PAGADO' AND p.fechaPago >= :desde AND p.fechaPago < :hasta")
+    java.util.List<Pago> findPagadosDelPeriodo(@Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta);
 }
