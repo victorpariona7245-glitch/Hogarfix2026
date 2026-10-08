@@ -3,16 +3,22 @@ package com.hogarfix.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 @Configuration
 public class SecurityConfig {
 
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                // Carga el token CSRF al inicio de la petición (no mientras se renderiza la página).
+                // Evita "Cannot create a session after the response has been committed"
+                // en páginas largas cuando el visitante aún no tiene sesión.
+                CsrfTokenRequestAttributeHandler csrfHandler = new CsrfTokenRequestAttributeHandler();
+                csrfHandler.setCsrfRequestAttributeName(null);
+
                 http
                                 .headers(headers -> headers
                                                 .frameOptions(frame -> frame.sameOrigin()))
@@ -65,8 +71,8 @@ public class SecurityConfig {
                                                 .logoutUrl("/logout")
                                                 .logoutSuccessUrl("/auth/login?logout")
                                                 .permitAll())
-                                // CSRF activo (por defecto)
-                                .csrf(Customizer.withDefaults());
+                                // CSRF activo, con el token cargado al inicio de la petición
+                                .csrf(csrf -> csrf.csrfTokenRequestHandler(csrfHandler));
 
                 return http.build();
         }
