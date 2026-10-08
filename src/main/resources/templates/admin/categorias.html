@@ -47,7 +47,10 @@
             <tr th:each="c : ${categorias}" class="fila-especialidad" th:attr="data-nombre=${c.nombre}">
               <td th:text="${c.nombre}">-</td>
               <td th:text="${c.tecnicos}">0</td>
-              <td>
+              <td style="white-space:nowrap;">
+                <button type="button" class="btn-outline btn-sm"
+                        th:attr="data-id=${c.id}, data-nombre=${c.nombre}"
+                        onclick="abrirEditar(this)">Editar</button>
                 <button type="button" class="btn-danger-outline btn-sm"
                         th:disabled="${c.tecnicos > 0}"
                         th:attr="data-id=${c.id}, data-nombre=${c.nombre}"
@@ -66,6 +69,23 @@
       </div>
     </main>
     <footer th:replace="~{fragments/footer :: footer}"></footer>
+  </div>
+
+  <!-- Ventana para editar el nombre -->
+  <div id="modal-editar" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; align-items:center; justify-content:center; padding:1rem;">
+    <form id="form-editar" th:action="@{/admin/categorias/0/editar}" method="post" autocomplete="off"
+          class="card" style="max-width:420px; width:100%; background:#fff;">
+      <h3 class="text-lg font-medium mb-2">Editar especialidad</h3>
+      <p class="text-sm mb-4" style="color: var(--muted-foreground);">
+        Cambia el nombre si te equivocaste. Los técnicos que ya la tienen verán el nombre nuevo.
+      </p>
+      <label class="form-label" for="nombre-editar">Nombre</label>
+      <input type="text" id="nombre-editar" name="nombre" minlength="2" maxlength="100" required class="form-input" />
+      <div class="flex gap-3 mt-4" style="justify-content:flex-end;">
+        <button type="button" class="btn-outline" onclick="cerrarEditar()">Cancelar</button>
+        <button type="submit" class="btn-primary">Guardar</button>
+      </div>
+    </form>
   </div>
 
   <!-- Ventana de confirmación para eliminar -->
@@ -99,6 +119,21 @@
       document.getElementById('sin-resultados').style.display = visibles === 0 ? '' : 'none';
     });
 
+    // Ventana para editar
+    var modalEditar = document.getElementById('modal-editar');
+    var formEditar = document.getElementById('form-editar');
+    var accionEditar = formEditar.getAttribute('action');
+    function abrirEditar(btn) {
+      formEditar.setAttribute('action', accionEditar.replace('/0/editar', '/' + btn.dataset.id + '/editar'));
+      var campo = document.getElementById('nombre-editar');
+      campo.value = btn.dataset.nombre;
+      modalEditar.style.display = 'flex';
+      campo.focus();
+      campo.select();
+    }
+    function cerrarEditar() { modalEditar.style.display = 'none'; }
+    modalEditar.addEventListener('click', function (e) { if (e.target === modalEditar) cerrarEditar(); });
+
     // Ventana de confirmación
     var modal = document.getElementById('modal-eliminar');
     var formEliminar = document.getElementById('form-eliminar');
@@ -112,7 +147,7 @@
     }
     function cerrarEliminar() { modal.style.display = 'none'; }
     modal.addEventListener('click', function (e) { if (e.target === modal) cerrarEliminar(); });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrarEliminar(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { cerrarEliminar(); cerrarEditar(); } });
   </script>
 </body>
 </html>

@@ -188,6 +188,34 @@ public class AdminController {
                 return "redirect:/admin/categorias";
         }
 
+        @org.springframework.web.bind.annotation.PostMapping("/categorias/{id}/editar")
+        public String editarCategoria(@org.springframework.web.bind.annotation.PathVariable Long id,
+                        @org.springframework.web.bind.annotation.RequestParam String nombre,
+                        Principal principal,
+                        org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
+                if (principal == null) {
+                        return "redirect:/auth/login";
+                }
+                String limpio = nombre == null ? "" : nombre.trim().replaceAll("\\s+", " ");
+                var categoria = categoriaService.buscarPorId(id);
+                if (categoria.isEmpty()) {
+                        redirectAttributes.addFlashAttribute("mensajeError", "La especialidad no existe.");
+                } else if (limpio.length() < 2 || limpio.length() > 100) {
+                        redirectAttributes.addFlashAttribute("mensajeError",
+                                        "El nombre debe tener entre 2 y 100 caracteres.");
+                } else if (!limpio.equalsIgnoreCase(categoria.get().getNombre())
+                                && categoriaRepository.existsByNombreIgnoreCase(limpio)) {
+                        redirectAttributes.addFlashAttribute("mensajeError",
+                                        "Ya existe una especialidad llamada \"" + limpio + "\".");
+                } else {
+                        categoria.get().setNombre(limpio);
+                        categoriaService.registrarCategoria(categoria.get());
+                        redirectAttributes.addFlashAttribute("mensajeExito",
+                                        "Especialidad actualizada a \"" + limpio + "\".");
+                }
+                return "redirect:/admin/categorias";
+        }
+
         @org.springframework.web.bind.annotation.PostMapping("/categorias/{id}/eliminar")
         public String eliminarCategoria(@org.springframework.web.bind.annotation.PathVariable Long id,
                         @org.springframework.web.bind.annotation.RequestParam(defaultValue = "") String password,
