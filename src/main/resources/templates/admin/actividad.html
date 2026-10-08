@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Registro de actividad')}"></head>
+<body class="bg-muted/20" style="background-color: rgba(236,236,240,0.25);">
+  <header th:replace="~{fragments/navbar :: navbar}"></header>
+  <aside th:replace="~{fragments/admin-sidebar :: sidebar('actividad')}"></aside>
+
+  <div class="min-h-screen flex flex-col admin-main">
+    <main class="flex-1 container mx-auto px-4 py-10" style="max-width: 1000px;">
+      <h2 class="text-2xl font-medium mb-2">Registro de actividad</h2>
+      <p class="text-sm mb-6" style="color: var(--muted-foreground);">
+        Quién creó, eliminó o cambió algo en el panel, y cuándo. Los registros no se pueden borrar ni editar.
+        La hora es la de Perú.
+      </p>
+
+      <form th:action="@{/admin/actividad}" method="get" class="mb-4 flex flex-wrap items-center gap-3">
+        <input type="search" name="q" th:value="${q}" maxlength="100" autocomplete="off"
+               placeholder="Buscar por administrador, acción o detalle..."
+               class="form-input" style="max-width:380px;" />
+        <button type="submit" class="btn-primary btn-sm">Buscar</button>
+        <a th:if="${q != null and !q.isEmpty()}" th:href="@{/admin/actividad}" class="btn-outline btn-sm">Quitar filtro</a>
+        <span class="text-sm" style="color: var(--muted-foreground);" th:text="${total + (total == 1 ? ' registro' : ' registros')}">0 registros</span>
+      </form>
+
+      <div class="card overflow-x-auto p-0">
+        <table class="table-clean">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Administrador</th>
+              <th>Acción</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="f : ${filas}">
+              <td style="white-space:nowrap;" th:text="${f.fecha}">08/10/2026 16:00</td>
+              <td th:text="${f.administrador}">admin@example.com</td>
+              <td><span class="badge-soft" th:text="${f.accion}">Especialidad creada</span></td>
+              <td th:text="${f.detalle}">Creó la especialidad "Pintura"</td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(filas)}">
+              <td colspan="4" class="text-sm" style="color: var(--muted-foreground);">
+                Aún no hay registros<span th:if="${q != null and !q.isEmpty()}"> que coincidan con la búsqueda</span>.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex items-center justify-between mt-4 text-sm">
+        <span style="color: var(--muted-foreground);" th:text="${'Página ' + (pagina + 1) + ' de ' + totalPaginas}">Página 1 de 1</span>
+        <div class="flex items-center gap-2">
+          <a th:if="${pagina > 0}" th:href="@{/admin/actividad(q=${q}, page=${pagina - 1})}" class="btn-outline btn-sm">← Anterior</a>
+          <a th:if="${pagina + 1 < totalPaginas}" th:href="@{/admin/actividad(q=${q}, page=${pagina + 1})}" class="btn-outline btn-sm">Siguiente →</a>
+        </div>
+      </div>
+    </main>
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+  </div>
+</body>
+</html>

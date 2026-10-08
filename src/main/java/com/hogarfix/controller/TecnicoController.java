@@ -303,6 +303,9 @@ public class TecnicoController {
             }
 
             return "redirect:/tecnicos/login?error";
+        } catch (org.springframework.security.authentication.LockedException ex) {
+            log.warn("Intento de login de un técnico con cuenta suspendida: username={}", username);
+            return "redirect:/tecnicos/login?error=suspendida";
         } catch (org.springframework.security.authentication.DisabledException ex) {
             // La contraseña fue correcta pero la cuenta aún no está aprobada: no cuenta como intento fallido
             log.warn("Intento de login de técnico con cuenta pendiente de aprobación: username={}", username);

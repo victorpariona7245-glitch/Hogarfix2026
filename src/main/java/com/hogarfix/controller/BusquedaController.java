@@ -39,6 +39,7 @@ public class BusquedaController {
         double minCal = minCalificacion != null ? minCalificacion : 0;
 
         List<Tecnico> filtrados = tecnicos.stream()
+                .filter(t -> t.getUsuario() == null || !t.getUsuario().isSuspendido())
                 .filter(t -> {
                     if (ciudadId == null) return true;
                     return t.getDireccion() != null && t.getDireccion().getCiudad() != null && Objects.equals(t.getDireccion().getCiudad().getIdCiudad(), ciudadId);

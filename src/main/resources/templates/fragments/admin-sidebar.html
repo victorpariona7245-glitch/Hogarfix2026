@@ -36,6 +36,7 @@
   <a th:href="@{/admin/administradores}"
      th:if="${session.usuarioActual != null and session.usuarioActual.email == (#strings.isEmpty(@environment.getProperty('app.admin.email')) ? 'admin@example.com' : @environment.getProperty('app.admin.email'))}"
      th:classappend="${activo == 'administradores'} ? 'active'">Administradores</a>
+  <a th:href="@{/admin/actividad}" th:classappend="${activo == 'actividad'} ? 'active'">Actividad</a>
   <a th:href="@{/admin/pagos}" th:classappend="${activo == 'pagos'} ? 'active'">Pagos</a>
   <a th:href="@{/admin/certificados}" th:classappend="${activo == 'certificados'} ? 'active'">
     <span>Certificados</span>

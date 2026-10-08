@@ -7,7 +7,7 @@
 
   <div class="min-h-screen flex flex-col admin-main">
     <main class="flex-1 container mx-auto px-4 py-10">
-      <h2 class="text-2xl font-medium mb-6">Listado de técnicos (solo lectura)</h2>
+      <h2 class="text-2xl font-medium mb-6">Técnicos registrados</h2>
 
       <div th:if="${mensajeExito}" class="text-sm mb-4 p-3 rounded-lg" style="background:#dcfce7; color:#166534;">
         <span th:text="${mensajeExito}">Cuenta actualizada</span>
@@ -43,6 +43,8 @@
                 <th>DNI</th>
                 <th>Ciudad</th>
                 <th>Calificación</th>
+                <th>Estado</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -62,6 +64,26 @@
                 <td th:text="${tecnico.dni ?: 'N/A'}">-</td>
                 <td th:text="${tecnico.direccion?.ciudad?.nombre ?: 'N/A'}">-</td>
                 <td th:text="${#numbers.formatDecimal(tecnico.promedioCalificacion, 1, 2)}">0.00</td>
+                <td>
+                  <span th:if="${tecnico.usuario != null and tecnico.usuario.suspendido}" class="badge-soft"
+                        style="background:#fee2e2; color:#991b1b;"
+                        th:title="${tecnico.usuario.motivoSuspension != null ? 'Motivo: ' + tecnico.usuario.motivoSuspension : 'Sin motivo'}">Suspendido</span>
+                  <span th:if="${tecnico.usuario != null and !tecnico.usuario.suspendido and tecnico.usuario.isActivo != true}" class="badge-soft"
+                        style="background:#fef3c7; color:#92400e;">Pendiente</span>
+                  <span th:if="${tecnico.usuario != null and !tecnico.usuario.suspendido and tecnico.usuario.isActivo == true}" class="badge-soft"
+                        style="background:#dcfce7; color:#166534;">Activo</span>
+                </td>
+                <td style="white-space:nowrap;">
+                  <button th:unless="${tecnico.usuario != null and tecnico.usuario.suspendido}" type="button"
+                          class="btn-danger-outline btn-sm"
+                          th:attr="data-id=${tecnico.idTecnico}, data-nombre=${(tecnico.nombres ?: '') + ' ' + (tecnico.apellidoPaterno ?: '')}"
+                          onclick="abrirSuspender(this)">Suspender</button>
+                  <form th:if="${tecnico.usuario != null and tecnico.usuario.suspendido}" style="display:inline;"
+                        th:action="@{/admin/tecnicos/{id}/reactivar(id=${tecnico.idTecnico})}" method="post"
+                        onsubmit="return confirm('¿Reactivar esta cuenta?');">
+                    <button type="submit" class="btn-outline btn-sm">Reactivar</button>
+                  </form>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -140,5 +162,37 @@
     </main>
     <footer th:replace="~{fragments/footer :: footer}"></footer>
   </div>
+
+  <!-- Ventana para suspender una cuenta -->
+  <div id="modal-suspender" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; align-items:center; justify-content:center; padding:1rem;">
+    <form id="form-suspender" th:action="@{/admin/tecnicos/0/suspender}" method="post" autocomplete="off"
+          class="card" style="max-width:420px; width:100%; background:#fff;">
+      <h3 class="text-lg font-medium mb-2">¿Suspender esta cuenta?</h3>
+      <p class="text-sm mb-4" style="color: var(--muted-foreground);">
+        <strong id="suspender-nombre"></strong> no podrá iniciar sesión mientras esté suspendida. Sus datos y servicios no se borran, y puedes reactivarla cuando quieras.
+      </p>
+      <label class="form-label" for="motivo-suspension">Motivo (opcional, solo lo ves tú)</label>
+      <input type="text" id="motivo-suspension" name="motivo" maxlength="255" class="form-input" placeholder="Ej: quejas de clientes" />
+      <div class="flex gap-3 mt-4" style="justify-content:flex-end;">
+        <button type="button" class="btn-outline" onclick="cerrarSuspender()">Cancelar</button>
+        <button type="submit" class="btn-primary" style="background:#d4183d;">Sí, suspender</button>
+      </div>
+    </form>
+  </div>
+  <script>
+    var modalSuspender = document.getElementById('modal-suspender');
+    var formSuspender = document.getElementById('form-suspender');
+    var accionSuspender = formSuspender.getAttribute('action');
+    function abrirSuspender(btn) {
+      formSuspender.setAttribute('action', accionSuspender.replace('/0/suspender', '/' + btn.dataset.id + '/suspender'));
+      document.getElementById('suspender-nombre').textContent = btn.dataset.nombre;
+      document.getElementById('motivo-suspension').value = '';
+      modalSuspender.style.display = 'flex';
+      document.getElementById('motivo-suspension').focus();
+    }
+    function cerrarSuspender() { modalSuspender.style.display = 'none'; }
+    modalSuspender.addEventListener('click', function (e) { if (e.target === modalSuspender) cerrarSuspender(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrarSuspender(); });
+  </script>
 </body>
 </html>

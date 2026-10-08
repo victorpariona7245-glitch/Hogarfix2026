@@ -17,6 +17,7 @@ import com.hogarfix.model.Rol;
 import com.hogarfix.model.Usuario;
 import com.hogarfix.repository.RolRepository;
 import com.hogarfix.repository.UsuarioRepository;
+import com.hogarfix.service.AuditoriaService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -34,6 +35,7 @@ public class AdminUsuariosController {
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditoriaService auditoriaService;
 
     @Value("${app.admin.email:}")
     private String adminEmailConfig;
@@ -116,6 +118,8 @@ public class AdminUsuariosController {
                     .password(passwordEncoder.encode(password))
                     .rol(rolAdmin)
                     .build());
+            auditoriaService.registrar(principal.getName(), "Administrador creado",
+                    "Creó al administrador " + correo + " (usuario " + usuario + ")");
             ra.addFlashAttribute("mensajeExito", "Administrador " + correo + " creado correctamente.");
         }
         return "redirect:/admin/administradores";
@@ -133,6 +137,8 @@ public class AdminUsuariosController {
             return "redirect:/admin/dashboard";
         }
         if (!passwordEncoder.matches(passwordPrincipal, principalUsuario.get().getPassword())) {
+            auditoriaService.registrar(principal.getName(), "Intento fallido",
+                    "Intentó eliminar a un administrador con contraseña incorrecta");
             ra.addFlashAttribute("mensajeError", "Contraseña incorrecta. No se eliminó al administrador.");
             return "redirect:/admin/administradores";
         }
@@ -146,7 +152,10 @@ public class AdminUsuariosController {
         } else if (admin.get().getEmail().equalsIgnoreCase(emailPrincipal())) {
             ra.addFlashAttribute("mensajeError", "No puedes eliminar al administrador principal.");
         } else {
+            String correoEliminado = admin.get().getEmail();
             usuarioRepository.deleteById(id);
+            auditoriaService.registrar(principal.getName(), "Administrador eliminado",
+                    "Eliminó al administrador " + correoEliminado);
             ra.addFlashAttribute("mensajeExito", "Administrador eliminado.");
         }
         return "redirect:/admin/administradores";

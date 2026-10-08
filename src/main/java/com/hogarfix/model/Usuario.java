@@ -42,6 +42,14 @@ public class Usuario extends Auditable implements UserDetails {
     @OneToOne(mappedBy = "usuario")
     private Tecnico tecnico;
 
+    // Suspensión por parte del administrador (distinto de "pendiente de aprobación",
+    // que usa isActivo = false). Una cuenta suspendida no puede iniciar sesión.
+    @Column(name = "suspendido", columnDefinition = "TINYINT(1) NOT NULL DEFAULT 0")
+    private boolean suspendido;
+
+    @Column(name = "motivo_suspension", length = 255)
+    private String motivoSuspension;
+
     // 🔒 Métodos requeridos por UserDetails
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -56,7 +64,7 @@ public class Usuario extends Auditable implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return !suspendido;
     }
 
     @Override

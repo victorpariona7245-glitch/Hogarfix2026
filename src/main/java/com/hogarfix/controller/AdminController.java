@@ -13,6 +13,7 @@ import com.hogarfix.repository.CategoriaRepository;
 import com.hogarfix.repository.TecnicoCategoriaRepository;
 import com.hogarfix.model.Categoria;
 import com.hogarfix.repository.UsuarioRepository;
+import com.hogarfix.service.AuditoriaService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import java.security.Principal;
 
@@ -32,6 +33,7 @@ public class AdminController {
         private final TecnicoCategoriaRepository tecnicoCategoriaRepository;
         private final UsuarioRepository usuarioRepository;
         private final PasswordEncoder passwordEncoder;
+        private final AuditoriaService auditoriaService;
 
         @GetMapping("/dashboard")
         public String dashboard(Model model, Principal principal) {
@@ -123,7 +125,11 @@ public class AdminController {
                         return "redirect:/auth/login";
                 }
                 try {
-                        tecnicoService.habilitarCuenta(id);
+                        var habilitado = tecnicoService.habilitarCuenta(id);
+                        auditoriaService.registrar(principal.getName(), "Técnico habilitado",
+                                        "Aprobó/habilitó la cuenta de " + habilitado.getNombres() + " "
+                                                        + habilitado.getApellidoPaterno() + " ("
+                                                        + habilitado.getUsuario().getEmail() + ")");
                         redirectAttributes.addFlashAttribute("mensajeExito", "Cuenta del técnico habilitada correctamente.");
                 } catch (RuntimeException ex) {
                         redirectAttributes.addFlashAttribute("mensajeError", ex.getMessage());
@@ -140,7 +146,11 @@ public class AdminController {
                         return "redirect:/auth/login";
                 }
                 try {
-                        tecnicoService.deshabilitarCuenta(id);
+                        var deshabilitado = tecnicoService.deshabilitarCuenta(id);
+                        auditoriaService.registrar(principal.getName(), "Técnico deshabilitado",
+                                        "Deshabilitó la cuenta de " + deshabilitado.getNombres() + " "
+                                                        + deshabilitado.getApellidoPaterno() + " ("
+                                                        + deshabilitado.getUsuario().getEmail() + ")");
                         redirectAttributes.addFlashAttribute("mensajeExito", "Cuenta del técnico deshabilitada.");
                 } catch (RuntimeException ex) {
                         redirectAttributes.addFlashAttribute("mensajeError", ex.getMessage());
@@ -182,6 +192,8 @@ public class AdminController {
                                         "Ya existe una especialidad llamada \"" + limpio + "\".");
                 } else {
                         categoriaService.registrarCategoria(Categoria.builder().nombre(limpio).build());
+                        auditoriaService.registrar(principal.getName(), "Especialidad creada",
+                                        "Creó la especialidad \"" + limpio + "\"");
                         redirectAttributes.addFlashAttribute("mensajeExito",
                                         "Especialidad \"" + limpio + "\" creada correctamente.");
                 }
@@ -208,8 +220,11 @@ public class AdminController {
                         redirectAttributes.addFlashAttribute("mensajeError",
                                         "Ya existe una especialidad llamada \"" + limpio + "\".");
                 } else {
+                        String nombreAnterior = categoria.get().getNombre();
                         categoria.get().setNombre(limpio);
                         categoriaService.registrarCategoria(categoria.get());
+                        auditoriaService.registrar(principal.getName(), "Especialidad editada",
+                                        "Cambió \"" + nombreAnterior + "\" por \"" + limpio + "\"");
                         redirectAttributes.addFlashAttribute("mensajeExito",
                                         "Especialidad actualizada a \"" + limpio + "\".");
                 }
@@ -227,6 +242,8 @@ public class AdminController {
                 var actual = usuarioRepository.findByEmail(principal.getName())
                                 .or(() -> usuarioRepository.findByUsername(principal.getName()));
                 if (actual.isEmpty() || !passwordEncoder.matches(password, actual.get().getPassword())) {
+                        auditoriaService.registrar(principal.getName(), "Intento fallido",
+                                        "Intentó eliminar una especialidad con contraseña incorrecta");
                         redirectAttributes.addFlashAttribute("mensajeError",
                                         "Contraseña incorrecta. No se eliminó la especialidad.");
                         return "redirect:/admin/categorias";
@@ -238,7 +255,10 @@ public class AdminController {
                         redirectAttributes.addFlashAttribute("mensajeError",
                                         "No se puede eliminar: hay técnicos que usan esta especialidad.");
                 } else {
+                        String nombreEliminado = categoria.get().getNombre();
                         categoriaService.eliminarCategoria(id);
+                        auditoriaService.registrar(principal.getName(), "Especialidad eliminada",
+                                        "Eliminó la especialidad \"" + nombreEliminado + "\"");
                         redirectAttributes.addFlashAttribute("mensajeExito", "Especialidad eliminada.");
                 }
                 return "redirect:/admin/categorias";
