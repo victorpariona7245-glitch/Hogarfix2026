@@ -49,6 +49,16 @@
         background: white;
       }
 
+      .chips { display:flex; flex-wrap:wrap; gap:0.5rem; }
+      .chip { position:relative; cursor:pointer; }
+      .chip input { position:absolute; opacity:0; inset:0; width:100%; height:100%; margin:0; cursor:pointer; }
+      .chip span { display:inline-block; padding:0.45rem 0.9rem; border:1.5px solid rgba(0,0,0,0.15);
+        border-radius:999px; font-size:0.85rem; background:#fff; transition:all .15s; user-select:none; }
+      .chip:hover span { border-color: var(--primary); }
+      .chip input:checked + span { background: var(--primary); color:#fff; border-color: var(--primary); }
+      .chip input:checked + span::before { content:"\2713\00a0"; }
+      .chip input:focus-visible + span { outline:2px solid #6366f1; outline-offset:2px; }
+
       .swal-input-modern-file {
         width: 100%;
         margin-top: 4px;
@@ -460,14 +470,14 @@
           </script>
         </div>
       </section>
-      <!-- HTML oculto: SELECT de categorías procesado por Thymeleaf -->
-      <div id="selectCategoriasHtml" style="display: none">
-        <option
-          th:each="cat : ${categorias}"
-          th:value="${cat.idCategoria}"
-          th:text="${cat.nombre}"
-          th:selected="${tecnico.categorias != null and tecnico.categorias.contains(cat)}"
-        ></option>
+      <!-- HTML oculto: chips de especialidades procesados por Thymeleaf (se copian al formulario) -->
+      <div id="categoriasChipsHtml" style="display: none"
+           th:with="idsActuales=${tecnico.categorias != null ? tecnico.categorias.![categoria.idCategoria] : {}}">
+        <label class="chip" th:each="cat : ${categorias}">
+          <input type="checkbox" name="categoriaIds" th:value="${cat.idCategoria}"
+                 th:checked="${idsActuales.contains(cat.idCategoria)}" />
+          <span th:text="${cat.nombre}"></span>
+        </label>
       </div>
     </main>
 
@@ -528,10 +538,11 @@
       </div>
 
       <div class="col-span-2">
-        <label class="swal-label">Categorías</label>
-        <select id="categoriasSelectSwal" class="swal-input-modern" multiple style="height: 130px;">
-          ${document.getElementById("selectCategoriasHtml").innerHTML}
-        </select>
+        <label class="swal-label">¿Qué servicios ofreces?</label>
+        <p style="font-size:12px; color:#717182; margin:0 0 6px 0;">Toca los que correspondan. Puedes elegir varios.</p>
+        <div id="categoriasChips" class="chips">
+          ${document.getElementById("categoriasChipsHtml").innerHTML}
+        </div>
       </div>
 
       <div>
@@ -594,6 +605,11 @@
               return false;
             }
 
+            if (document.querySelectorAll("#categoriasChips input:checked").length === 0) {
+              Swal.showValidationMessage("Elige al menos un servicio.");
+              return false;
+            }
+
             const formData = new FormData();
 
             formData.append(
@@ -615,8 +631,8 @@
             formData.append("correo", document.getElementById("correo").value);
 
             const categorias = Array.from(
-              document.querySelector("#categoriasSelectSwal").selectedOptions
-            ).map((opt) => opt.value);
+              document.querySelectorAll("#categoriasChips input:checked")
+            ).map((inp) => inp.value);
 
             categorias.forEach((id) => formData.append("categoriaIds", id));
 
