@@ -34,7 +34,7 @@ public class BusquedaController {
             @RequestParam(value = "minCalificacion", required = false) Integer minCalificacion,
             Model model) {
 
-        List<Tecnico> tecnicos = tecnicoService.listarTecnicos();
+        List<Tecnico> tecnicos = tecnicoService.listarTecnicosAprobados();
 
         double minCal = minCalificacion != null ? minCalificacion : 0;
 

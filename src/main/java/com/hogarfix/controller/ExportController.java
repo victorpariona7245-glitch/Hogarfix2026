@@ -100,7 +100,7 @@ public class ExportController {
 
     @GetMapping("/tecnicos.csv")
     public ResponseEntity<byte[]> tecnicosCsv() {
-        List<Tecnico> tecnicos = tecnicoService.listarTecnicos();
+        List<Tecnico> tecnicos = tecnicoService.listarTecnicosAprobados();
         StringBuilder sb = new StringBuilder();
         agregarFilaCsv(sb, "ID", "Nombres", "Apellido Paterno", "Apellido Materno", "DNI", "Telefono", "Correo", "Ciudad", "Especialidades", "Calificacion", "Disponible");
         for (Tecnico t : tecnicos) {
@@ -123,7 +123,7 @@ public class ExportController {
     @GetMapping("/tecnicos.xlsx")
     public ResponseEntity<byte[]> tecnicosExcel() throws IOException {
         String[] encabezados = {"ID", "Nombres", "Apellido Paterno", "Apellido Materno", "DNI", "Teléfono", "Correo", "Ciudad", "Especialidades", "Calificación", "Disponible"};
-        List<Tecnico> tecnicos = tecnicoService.listarTecnicos();
+        List<Tecnico> tecnicos = tecnicoService.listarTecnicosAprobados();
         try (Workbook wb = new XSSFWorkbook()) {
             Sheet sheet = wb.createSheet("Técnicos");
             escribirEncabezado(wb, sheet, encabezados);

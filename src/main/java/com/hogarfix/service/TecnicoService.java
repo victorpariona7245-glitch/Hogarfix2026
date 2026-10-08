@@ -116,6 +116,14 @@ public class TecnicoService {
         }
     }
 
+    /** Técnicos con la cuenta ya aprobada: se excluyen los que esperan la revisión de su certificado. */
+    @Transactional(readOnly = true)
+    public List<Tecnico> listarTecnicosAprobados() {
+        return listarTecnicos().stream()
+                .filter(t -> t.getUsuario() != null && Boolean.TRUE.equals(t.getUsuario().getIsActivo()))
+                .toList();
+    }
+
     @Transactional(readOnly = true)
     public List<Tecnico> listarTecnicos() {
         try {

@@ -43,7 +43,9 @@ public class AdminController {
 
                 // Datos relevantes
                 var servicios = servicioService.listarServicios();
-                var tecnicos = tecnicoService.listarTecnicos();
+                var todosLosTecnicos = tecnicoService.listarTecnicos();
+                // el listado y los contadores solo cuentan técnicos ya aprobados
+                var tecnicos = tecnicoService.listarTecnicosAprobados();
                 var clientes = clienteService.listarClientes();
 
                 // Ejemplo de cálculos relevantes
@@ -65,7 +67,7 @@ public class AdminController {
                 model.addAttribute("clientesCount", clientes != null ? clientes.size() : 0);
                 model.addAttribute("tecnicosCount", tecnicos != null ? tecnicos.size() : 0);
 
-                long pendientesCount = tecnicos == null ? 0 : tecnicos.stream()
+                long pendientesCount = todosLosTecnicos == null ? 0 : todosLosTecnicos.stream()
                                 .filter(t -> t.getUsuario() == null || !Boolean.TRUE.equals(t.getUsuario().getIsActivo()))
                                 .count();
                 model.addAttribute("certificadosPendientesCount", pendientesCount);
@@ -101,7 +103,8 @@ public class AdminController {
                 if (principal == null) {
                         return "redirect:/auth/login";
                 }
-                var tecnicos = tecnicoService.listarTecnicos();
+                // los técnicos pendientes de aprobación solo aparecen en "Certificados"
+                var tecnicos = tecnicoService.listarTecnicosAprobados();
                 model.addAttribute("tecnicos", tecnicos);
                 return "admin/tecnicos";
         }

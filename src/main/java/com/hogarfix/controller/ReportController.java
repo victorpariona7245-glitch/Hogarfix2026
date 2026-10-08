@@ -27,7 +27,7 @@ public class ReportController {
 
     @GetMapping(value = "/tecnicos.xlsx", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     public ResponseEntity<byte[]> exportTecnicosExcel() throws Exception {
-        List<Tecnico> tecnicos = tecnicoService.listarTecnicos();
+        List<Tecnico> tecnicos = tecnicoService.listarTecnicosAprobados();
 
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
             XSSFSheet sheet = workbook.createSheet("Técnicos");
