@@ -178,6 +178,12 @@
           </div>
         </div>
       </section>
+      <!-- Mis calificaciones -->
+      <section class="card rounded-2xl">
+        <h3 class="text-sm font-medium mb-3" style="color: var(--muted-foreground);">Mis calificaciones</h3>
+        <p id="mis-resenas-resumen" class="text-sm mb-3">Cargando...</p>
+        <div id="mis-resenas-lista" class="space-y-3"></div>
+      </section>
       </div>
 
       <section class="md:col-span-2 card rounded-2xl">
@@ -646,6 +652,42 @@
           }
         });
       }
+    </script>
+
+    <script>
+      // Mis calificaciones: promedio y últimas reseñas
+      (function () {
+        var resumen = document.getElementById('mis-resenas-resumen');
+        var lista = document.getElementById('mis-resenas-lista');
+        if (!resumen || !lista) return;
+        fetch('/resenas/mias', { headers: { 'Accept': 'application/json' } })
+          .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+          .then(function (d) {
+            if (!d.total) { resumen.textContent = 'Aún no tienes calificaciones.'; return; }
+            resumen.textContent = '★ ' + d.promedio.toFixed(1) + ' de 5 · ' + d.total + (d.total === 1 ? ' reseña' : ' reseñas');
+            d.resenas.slice(0, 5).forEach(function (r) {
+              var item = document.createElement('div');
+              item.className = 'border rounded-xl p-3 text-sm';
+              item.style.borderColor = 'var(--border)';
+              var est = document.createElement('div');
+              est.style.color = '#f59e0b';
+              est.textContent = '★'.repeat(r.puntuacion) + '☆'.repeat(5 - r.puntuacion);
+              var quien = document.createElement('span');
+              quien.style.color = 'var(--muted-foreground)';
+              quien.textContent = '  ' + r.cliente + (r.fecha ? ' · ' + r.fecha : '');
+              est.appendChild(quien);
+              item.appendChild(est);
+              if (r.comentario) {
+                var com = document.createElement('p');
+                com.className = 'mt-1';
+                com.textContent = r.comentario;
+                item.appendChild(com);
+              }
+              lista.appendChild(item);
+            });
+          })
+          .catch(function () { resumen.textContent = 'No se pudieron cargar tus calificaciones.'; });
+      })();
     </script>
 
     <script>

@@ -2,6 +2,7 @@ package com.hogarfix.controller;
 
 import com.hogarfix.model.Tecnico;
 import com.hogarfix.model.TecnicoCategoria;
+import com.hogarfix.repository.CalificacionRepository;
 import com.hogarfix.service.CategoriaService;
 import com.hogarfix.service.CiudadService;
 import com.hogarfix.service.TecnicoService;
@@ -11,7 +12,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -22,6 +25,7 @@ public class BusquedaController {
     private final TecnicoService tecnicoService;
     private final CiudadService ciudadService;
     private final CategoriaService categoriaService;
+    private final CalificacionRepository calificacionRepository;
 
     @GetMapping("/buscartecnicos")
     public String buscarTecnicos(
@@ -50,6 +54,13 @@ public class BusquedaController {
                     return prom >= minCal;
                 })
                 .collect(Collectors.toList());
+
+        // cantidad de reseñas por técnico (para mostrar "(3 reseñas)" en cada tarjeta)
+        Map<Long, Long> resenasPorTecnico = new HashMap<>();
+        for (Object[] fila : calificacionRepository.contarPorTecnico()) {
+            resenasPorTecnico.put(((Number) fila[0]).longValue(), ((Number) fila[1]).longValue());
+        }
+        model.addAttribute("resenasPorTecnico", resenasPorTecnico);
 
         model.addAttribute("tecnicos", filtrados);
         model.addAttribute("ciudades", ciudadService.listarCiudades());

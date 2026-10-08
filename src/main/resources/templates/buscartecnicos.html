@@ -155,7 +155,8 @@
           No se encontraron técnicos con esos filtros.
         </div>
 
-        <article th:each="tecnico : ${tecnicos}" class="card">
+        <article th:each="tecnico : ${tecnicos}" class="card"
+                 th:with="nres=${resenasPorTecnico != null and resenasPorTecnico[tecnico.idTecnico] != null ? resenasPorTecnico[tecnico.idTecnico] : 0}">
           <div class="flex flex-col items-center text-center">
       <img th:src="${tecnico.fotoPerfil != null} ? @{/tecnicos/fotos/{name}(name=${tecnico.fotoPerfil.substring(tecnico.fotoPerfil.lastIndexOf('/') + 1)})} : 'https://cdn-icons-png.flaticon.com/512/2922/2922510.png'"
         alt="Foto técnico"
@@ -173,8 +174,15 @@
             </div>
             <p class="text-gray-500 text-sm mb-1" th:unless="${tecnico.categorias != null and !#lists.isEmpty(tecnico.categorias)}">Especialidad: Sin especificar</p>
             <p class="text-gray-500 text-sm mb-1">Ubicación: <span th:text="${tecnico.direccion.ciudad.nombre}">Ciudad</span></p>
-            <p class="text-yellow-500 mb-3">
-              <span th:text="${tecnico.promedioCalificacion != null ? (tecnico.promedioCalificacion.toString()) : '0.0'}">0.0</span>
+            <p class="mb-3 text-sm">
+              <span th:if="${nres > 0}">
+                <span style="color:#f59e0b;">★</span>
+                <strong th:text="${tecnico.promedioCalificacion != null ? tecnico.promedioCalificacion.toString() : '0.0'}">4.5</strong>
+                <button type="button" class="ver-resenas underline text-gray-500"
+                        th:attr="data-id=${tecnico.idTecnico}, data-name=${tecnico.nombres + ' ' + tecnico.apellidoPaterno}"
+                        th:text="${'(' + nres + (nres == 1 ? ' reseña)' : ' reseñas)')}">(3 reseñas)</button>
+              </span>
+              <span th:if="${nres == 0}" class="text-gray-400">Sin reseñas aún</span>
             </p>
 
             <!-- Estado de disponibilidad del técnico -->
@@ -472,6 +480,74 @@
   </script>
 
   
+
+  <!-- Ventana de reseñas del técnico -->
+  <div id="resenas-modal" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; align-items:center; justify-content:center; padding:1rem;">
+    <div class="card" style="max-width:480px; width:100%; max-height:85vh; overflow-y:auto; background:#fff;">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <h3 class="text-lg font-medium" id="resenas-titulo">Reseñas</h3>
+          <p class="text-sm" id="resenas-resumen" style="color: var(--muted-foreground);"></p>
+        </div>
+        <button type="button" id="resenas-cerrar" class="btn-outline btn-sm">Cerrar</button>
+      </div>
+      <div id="resenas-lista" class="space-y-3"></div>
+    </div>
+  </div>
+
+  <script>
+    // Reseñas de un técnico (se piden al servidor y se pintan con textContent)
+    (function () {
+      var modal = document.getElementById('resenas-modal');
+      var lista = document.getElementById('resenas-lista');
+      var titulo = document.getElementById('resenas-titulo');
+      var resumen = document.getElementById('resenas-resumen');
+      function estrellas(n) { return '★'.repeat(n) + '☆'.repeat(5 - n); }
+      function cerrar() { modal.classList.add('hidden'); modal.style.display = ''; }
+      function abrir() { modal.classList.remove('hidden'); modal.style.display = 'flex'; }
+      document.getElementById('resenas-cerrar').addEventListener('click', cerrar);
+      modal.addEventListener('click', function (e) { if (e.target === modal) cerrar(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrar(); });
+
+      document.querySelectorAll('.ver-resenas').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          titulo.textContent = 'Reseñas de ' + btn.dataset.name;
+          resumen.textContent = 'Cargando...';
+          lista.textContent = '';
+          abrir();
+          fetch('/resenas/tecnico/' + encodeURIComponent(btn.dataset.id), { headers: { 'Accept': 'application/json' } })
+            .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+            .then(function (d) {
+              resumen.textContent = '★ ' + d.promedio.toFixed(1) + ' · ' + d.total + (d.total === 1 ? ' reseña' : ' reseñas');
+              if (!d.resenas.length) { lista.textContent = 'Aún no hay reseñas.'; return; }
+              d.resenas.forEach(function (r) {
+                var item = document.createElement('div');
+                item.className = 'border rounded-xl p-3';
+                item.style.borderColor = 'var(--border)';
+                var cab = document.createElement('div');
+                cab.className = 'flex items-center justify-between text-sm';
+                var est = document.createElement('span');
+                est.style.color = '#f59e0b';
+                est.textContent = estrellas(r.puntuacion);
+                var quien = document.createElement('span');
+                quien.style.color = 'var(--muted-foreground)';
+                quien.textContent = r.cliente + (r.fecha ? ' · ' + r.fecha : '');
+                cab.appendChild(est); cab.appendChild(quien);
+                item.appendChild(cab);
+                if (r.comentario) {
+                  var com = document.createElement('p');
+                  com.className = 'text-sm mt-1';
+                  com.textContent = r.comentario;
+                  item.appendChild(com);
+                }
+                lista.appendChild(item);
+              });
+            })
+            .catch(function () { resumen.textContent = 'No se pudieron cargar las reseñas.'; });
+        });
+      });
+    })();
+  </script>
 
   <script>
     lucide.createIcons();
