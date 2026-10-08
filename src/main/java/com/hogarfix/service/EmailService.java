@@ -152,4 +152,21 @@ public class EmailService {
                 + "Saludos,\nEl equipo de HogarFix";
         enviar(to, subject, text, "solicitud expirada");
     }
+
+    /**
+     * Envía el enlace para restablecer la contraseña (vale 30 minutos).
+     */
+    @Async
+    public void sendRecuperarPasswordEmail(String to, String nombre, String enlace) {
+        if (to == null || to.isBlank()) return;
+
+        String subject = "Restablece tu contraseña de HogarFix";
+        String text = "Hola " + (nombre != null && !nombre.isBlank() ? nombre : "") + ",\n\n"
+                + "Recibimos una solicitud para restablecer la contraseña de tu cuenta en HogarFix.\n\n"
+                + "Haz clic en este enlace para crear una contraseña nueva (vale 30 minutos y solo se puede usar una vez):\n"
+                + enlace + "\n\n"
+                + "Si no fuiste tú, ignora este correo: tu contraseña actual no cambiará.\n\n"
+                + "Saludos,\nEl equipo de HogarFix";
+        enviar(to, subject, text, "recuperar contraseña");
+    }
 }
