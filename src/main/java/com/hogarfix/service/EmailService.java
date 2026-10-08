@@ -19,10 +19,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Envío de correos.
- * - Si existe RESEND_API_KEY, envía por la API HTTP de Resend (funciona en Render y Railway,
- *   donde el SMTP está bloqueado).
- * - Si no, usa el SMTP configurado en spring.mail.* (por ejemplo Gmail en tu PC).
+ * Envío de correos (por orden de prioridad):
+ * 1. Si existe BREVO_API_KEY, usa la API HTTP de Brevo (permite verificar tu propio correo como remitente).
+ * 2. Si existe RESEND_API_KEY, usa la API HTTP de Resend (requiere dominio verificado para enviar a terceros).
+ * 3. Si no hay ninguna, usa el SMTP de spring.mail.* (por ejemplo Gmail en tu PC).
+ * Las APIs HTTP funcionan en Render y Railway, donde el SMTP está bloqueado.
  * Todos los métodos son asíncronos y nunca interrumpen el flujo si el correo falla.
  */
 @Service
@@ -31,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 public class EmailService {
 
     private static final String RESEND_URL = "https://api.resend.com/emails";
+    private static final String BREVO_URL = "https://api.brevo.com/v3/smtp/email";
 
     private final JavaMailSender mailSender;
 
@@ -39,6 +41,15 @@ public class EmailService {
 
     @Value("${mail.from:onboarding@resend.dev}")
     private String remitente;
+
+    @Value("${brevo.api.key:}")
+    private String brevoApiKey;
+
+    @Value("${brevo.sender.email:}")
+    private String brevoSenderEmail;
+
+    @Value("${brevo.sender.name:HogarFix}")
+    private String brevoSenderName;
 
     private final RestTemplate restTemplate = crearRestTemplate();
 
@@ -52,7 +63,18 @@ public class EmailService {
     /** Envía un correo de texto. Devuelve sin lanzar excepción aunque falle. */
     private void enviar(String to, String subject, String text, String tipo) {
         try {
-            if (resendApiKey != null && !resendApiKey.isBlank()) {
+            if (brevoApiKey != null && !brevoApiKey.isBlank()) {
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                headers.set("api-key", brevoApiKey.trim());
+                Map<String, Object> cuerpo = Map.of(
+                        "sender", Map.of("name", brevoSenderName, "email", brevoSenderEmail.trim()),
+                        "to", List.of(Map.of("email", to)),
+                        "subject", subject,
+                        "textContent", text);
+                restTemplate.postForEntity(BREVO_URL, new HttpEntity<>(cuerpo, headers), String.class);
+                log.info("Email de {} enviado a {} con Brevo", tipo, to);
+            } else if (resendApiKey != null && !resendApiKey.isBlank()) {
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
                 headers.setBearerAuth(resendApiKey.trim());
@@ -72,7 +94,7 @@ public class EmailService {
                 log.info("Email de {} enviado a {} por SMTP", tipo, to);
             }
         } catch (HttpStatusCodeException ex) {
-            log.warn("Resend rechazó el email de {} a {}: {} {}", tipo, to, ex.getStatusCode(),
+            log.warn("El servicio de correo rechazó el email de {} a {}: {} {}", tipo, to, ex.getStatusCode(),
                     ex.getResponseBodyAsString());
         } catch (Exception ex) {
             log.warn("No se pudo enviar email de {} a {}: {}", tipo, to, ex.getMessage());
