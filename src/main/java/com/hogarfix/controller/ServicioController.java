@@ -62,7 +62,7 @@ public class ServicioController {
                                     @RequestParam(value = "date", required = false) String date,
                                     @RequestParam("description") String description,
                                     @RequestParam(value = "idTecnico", required = false) Long idTecnico,
-                                    @RequestParam(value = "metodoPago", required = false, defaultValue = "tarjeta") String metodoPago,
+                                    @RequestParam(value = "metodoPago", required = false, defaultValue = "yape") String metodoPago,
                                     Principal principal,
                                     HttpSession session,
                                     Model model) {
@@ -96,7 +96,7 @@ public class ServicioController {
 
     Servicio s = new Servicio();
     s.setCliente(cliente);
-    s.setMetodoPagoPreferido(metodoPago);
+    s.setMetodoPagoPreferido("efectivo".equalsIgnoreCase(metodoPago) ? "efectivo" : "yape");
         // si el cliente seleccionó un técnico desde la lista de técnicos, asignarlo
         if (idTecnico != null) {
             tecnicoService.buscarPorId(idTecnico).ifPresent(s::setTecnico);
@@ -320,7 +320,7 @@ public class ServicioController {
                 String metodoElegido = (updated.getMetodoPagoPreferido() != null
                         && !updated.getMetodoPagoPreferido().isBlank())
                                 ? updated.getMetodoPagoPreferido()
-                                : "tarjeta";
+                                : "yape";
                 com.hogarfix.model.Pago pago = com.hogarfix.model.Pago.builder()
                         .servicio(updated)
                         .cliente(updated.getCliente())

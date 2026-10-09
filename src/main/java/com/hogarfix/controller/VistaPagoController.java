@@ -3,7 +3,6 @@ package com.hogarfix.controller;
 import com.hogarfix.model.Cliente;
 import com.hogarfix.model.Pago;
 import com.hogarfix.service.ClienteService;
-import com.hogarfix.service.MercadoPagoService;
 import com.hogarfix.service.PagoService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -26,7 +25,6 @@ public class VistaPagoController {
 
     private final PagoService pagoService;
     private final ClienteService clienteService;
-    private final MercadoPagoService mercadoPagoService;
     private static final Logger logger = LoggerFactory.getLogger(VistaPagoController.class);
 
     // Datos para recibir pagos por Yape/Plin (se configuran en Railway, nunca en el código)
@@ -87,7 +85,6 @@ public class VistaPagoController {
         }
         model.addAttribute("pagos", pagosDto);
         model.addAttribute("cliente", cliente);
-        model.addAttribute("mpConfigurado", mercadoPagoService.estaConfigurado());
         model.addAttribute("yapeConfigurado", yapeNumero != null && !yapeNumero.isBlank());
         model.addAttribute("yapeNumero", yapeNumero);
         model.addAttribute("yapeTitular", yapeTitular);

@@ -91,21 +91,8 @@
           <div th:if="${pago != null and pago.estado != 'PAGADO' and pago.estado != 'EN_REVISION'}">
             <p class="text-sm text-slate-600 mb-2">Elige cómo pagar</p>
             <div class="flex flex-wrap gap-2 mb-4">
-              <button type="button" class="metodo-btn px-3 py-2 rounded-md border border-slate-200 bg-white text-sm" data-metodo="tarjeta">💳 Tarjeta / MercadoPago</button>
               <button type="button" class="metodo-btn px-3 py-2 rounded-md border border-slate-200 bg-white text-sm" data-metodo="yape">📱 Yape / Plin</button>
               <button type="button" class="metodo-btn px-3 py-2 rounded-md border border-slate-200 bg-white text-sm" data-metodo="efectivo">💵 Efectivo</button>
-            </div>
-
-            <!-- Tarjeta (MercadoPago) -->
-            <div class="metodo-panel" data-panel="tarjeta">
-              <div th:if="${!mpConfigurado}" class="p-4 rounded-md text-sm" style="background:#fef3c7; color:#92400e;">
-                La pasarela de pago (MercadoPago) todavía no está configurada. Elige otro método o contacta al administrador.
-              </div>
-              <a th:if="${mpConfigurado}" th:href="@{/pagos/{id}/mp-iniciar(id=${pago.idPago})}"
-                 class="btn-primary inline-block text-center" style="background-color:#009EE3;">
-                Pagar con MercadoPago
-              </a>
-              <p th:if="${mpConfigurado}" class="text-xs text-slate-400 mt-2">Ambiente de pruebas (sandbox) · No se cobra dinero real</p>
             </div>
 
             <!-- Yape / Plin -->
@@ -151,7 +138,7 @@
 
             <script th:inline="javascript">
               (function () {
-                var inicial = /*[[${pago.metodoPago == 'efectivo' ? 'efectivo' : ((pago.metodoPago == 'yape' or pago.metodoPago == 'plin') ? 'yape' : 'tarjeta')}]]*/ 'tarjeta';
+                var inicial = /*[[${pago.metodoPago == 'efectivo' ? 'efectivo' : 'yape'}]]*/ 'yape';
                 function mostrar(m) {
                   document.querySelectorAll('.metodo-panel').forEach(function (p) {
                     p.style.display = p.dataset.panel === m ? 'block' : 'none';
