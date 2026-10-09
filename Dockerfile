@@ -1,5 +1,5 @@
 # 1. Etapa de Construcción (Build Stage)
-FROM maven:3.9.6-eclipse-temurin-21 AS build
+FROM public.ecr.aws/docker/library/maven:3.9.6-eclipse-temurin-21 AS build
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ COPY src /app/src
 RUN mvn clean package -DskipTests
 
 # 2. Etapa de Ejecución (Run Stage)
-FROM eclipse-temurin:21-jre-alpine
+FROM public.ecr.aws/docker/library/eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
