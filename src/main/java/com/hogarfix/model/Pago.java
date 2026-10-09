@@ -54,5 +54,24 @@ public class Pago extends Auditable {
     private String estado; // PAGADO, PENDIENTE, CANCELADO
 
     @Column(name = "referencia_pago", length = 100)
-    private String referenciaPago; // ID del cargo en la pasarela de pago (Culqi)
+    private String referenciaPago; // ID del cargo en la pasarela de pago (Culqi / MercadoPago)
+
+    // --- Comisión de la plataforma ---
+    @Column(precision = 10, scale = 2)
+    private BigDecimal comision; // lo que se queda HogarFix
+
+    @Column(name = "monto_tecnico", precision = 10, scale = 2)
+    private BigDecimal montoTecnico; // lo que le corresponde al técnico (monto - comisión)
+
+    // --- Pagos manuales (Yape / Plin) ---
+    @Column(name = "codigo_operacion", length = 40)
+    private String codigoOperacion; // nº de operación que informa el cliente
+
+    @Column(name = "nota_revision", length = 200)
+    private String notaRevision; // motivo si el admin rechaza el comprobante
+
+    // Online: ¿ya se le transfirió al técnico su parte? Efectivo: ¿ya cobramos la comisión al técnico?
+    private Boolean liquidado;
+
+    private LocalDateTime fechaLiquidacion;
 }

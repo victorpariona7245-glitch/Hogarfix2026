@@ -14,6 +14,8 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
     Optional<Pago> findByServicio(Servicio servicio);
     java.util.List<Pago> findByCliente(com.hogarfix.model.Cliente cliente);
 
+    boolean existsByCodigoOperacionAndIdPagoNot(String codigoOperacion, Long idPago);
+
     @Query("SELECT COALESCE(SUM(p.monto), 0) FROM Pago p " +
             "WHERE p.servicio.tecnico.idTecnico = :idTecnico AND p.estado = 'PAGADO' " +
             "AND p.fechaPago >= :desde")

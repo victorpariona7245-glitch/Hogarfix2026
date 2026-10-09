@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Cobros y comisiones')}"></head>
+<body style="background-color: rgba(236,236,240,0.25);">
+  <header th:replace="~{fragments/navbar :: navbar}"></header>
+  <aside th:replace="~{fragments/admin-sidebar :: sidebar('comisiones')}"></aside>
+
+  <div class="min-h-screen flex flex-col admin-main">
+    <main class="flex-1 container mx-auto px-4 py-10">
+      <h2 class="text-2xl font-medium mb-1">Cobros y comisiones</h2>
+      <p class="text-sm mb-6" style="color: var(--muted-foreground);">
+        Comisión de HogarFix: <strong th:text="${porcentaje + '%'}">10%</strong> de cada servicio
+        (se cambia con la variable <code>COMISION_PORCENTAJE</code> en Railway).
+      </p>
+
+      <div th:if="${mensajeExito}" class="p-3 text-sm rounded-lg mb-4" style="background:#dcfce7; color:#166534;" th:text="${mensajeExito}"></div>
+      <div th:if="${mensajeError}" class="p-3 text-sm rounded-lg mb-4" style="background:#fee2e2; color:#991b1b;" th:text="${mensajeError}"></div>
+
+      <!-- Resumen -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="card"><p class="text-xs" style="color:var(--muted-foreground);">Total cobrado</p>
+          <p class="text-xl font-semibold" th:text="${'S/ ' + #numbers.formatDecimal(totalCobrado,1,2)}">S/ 0.00</p></div>
+        <div class="card"><p class="text-xs" style="color:var(--muted-foreground);">Comisión ganada</p>
+          <p class="text-xl font-semibold" style="color:#16a34a;" th:text="${'S/ ' + #numbers.formatDecimal(totalComision,1,2)}">S/ 0.00</p></div>
+        <div class="card"><p class="text-xs" style="color:var(--muted-foreground);">Por transferir a técnicos</p>
+          <p class="text-xl font-semibold" style="color:#d97706;" th:text="${'S/ ' + #numbers.formatDecimal(porTransferir,1,2)}">S/ 0.00</p></div>
+        <div class="card"><p class="text-xs" style="color:var(--muted-foreground);">Comisiones por cobrar (efectivo)</p>
+          <p class="text-xl font-semibold" style="color:#dc2626;" th:text="${'S/ ' + #numbers.formatDecimal(porCobrarEfectivo,1,2)}">S/ 0.00</p></div>
+      </div>
+
+      <!-- Pagos Yape/Plin por revisar -->
+      <h3 class="text-lg font-medium mb-3">Pagos por revisar (Yape / Plin)</h3>
+      <div th:if="${#lists.isEmpty(enRevision)}" class="card text-sm mb-8" style="color:var(--muted-foreground);">
+        No hay pagos esperando revisión.
+      </div>
+      <div th:if="${!#lists.isEmpty(enRevision)}" class="card overflow-x-auto p-0 mb-8">
+        <table class="table-clean">
+          <thead>
+            <tr><th>#</th><th>Cliente</th><th>Método</th><th>Monto</th><th>N° de operación</th><th>Acciones</th></tr>
+          </thead>
+          <tbody>
+            <tr th:each="f : ${enRevision}">
+              <td th:text="${f.pago.idPago}">1</td>
+              <td th:text="${f.cliente}">Cliente</td>
+              <td th:text="${#strings.toUpperCase(f.pago.metodoPago)}">YAPE</td>
+              <td th:text="${'S/ ' + #numbers.formatDecimal(f.pago.monto,1,2)}">S/ 0.00</td>
+              <td><strong th:text="${f.pago.codigoOperacion}">12345678</strong></td>
+              <td>
+                <div class="flex flex-wrap items-center gap-2">
+                  <form th:action="@{/admin/comisiones/{id}/aprobar(id=${f.pago.idPago})}" method="post"
+                        onsubmit="return confirm('¿Confirmas que el dinero ya llegó a tu Yape/Plin?');">
+                    <button type="submit" class="btn-primary btn-sm" style="background-color:#16a34a;">Aprobar</button>
+                  </form>
+                  <form th:action="@{/admin/comisiones/{id}/rechazar(id=${f.pago.idPago})}" method="post" class="flex gap-1">
+                    <input type="text" name="motivo" maxlength="200" placeholder="Motivo (opcional)"
+                           class="border rounded-lg p-1 text-sm" style="border-color: var(--border); width: 160px;" />
+                    <button type="submit" class="btn-outline btn-sm" style="color:#dc2626; border-color:#dc2626;">Rechazar</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Todos los pagos -->
+      <h3 class="text-lg font-medium mb-3">Todos los pagos</h3>
+      <div th:if="${#lists.isEmpty(filas)}" class="card text-sm" style="color:var(--muted-foreground);">Aún no hay pagos.</div>
+      <div th:if="${!#lists.isEmpty(filas)}" class="card overflow-x-auto p-0">
+        <table class="table-clean">
+          <thead>
+            <tr>
+              <th>#</th><th>Cliente</th><th>Técnico</th><th>Método</th><th>Monto</th>
+              <th>Comisión</th><th>Neto técnico</th><th>Estado</th><th>Liquidación</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="f : ${filas}">
+              <td th:text="${f.pago.idPago}">1</td>
+              <td th:text="${f.cliente}">Cliente</td>
+              <td th:text="${f.tecnico}">Técnico</td>
+              <td th:text="${f.pago.metodoPago ?: '-'}">-</td>
+              <td th:text="${'S/ ' + #numbers.formatDecimal(f.pago.monto,1,2)}">S/ 0.00</td>
+              <td th:text="${'S/ ' + #numbers.formatDecimal(f.comision,1,2)}">S/ 0.00</td>
+              <td th:text="${'S/ ' + #numbers.formatDecimal(f.neto,1,2)}">S/ 0.00</td>
+              <td>
+                <span class="badge-soft"
+                      th:style="${f.pago.estado == 'PAGADO'} ? 'background:#dcfce7; color:#166534;' : (${f.pago.estado == 'EN_REVISION'} ? 'background:#dbeafe; color:#1e40af;' : 'background:#fef3c7; color:#92400e;')"
+                      th:text="${#strings.replace(f.pago.estado, '_', ' ')}">PENDIENTE</span>
+              </td>
+              <td>
+                <th:block th:if="${f.pago.estado == 'PAGADO'}">
+                  <span th:if="${f.liquidado}" class="badge-soft" style="background:#dcfce7; color:#166534;"
+                        th:text="${f.efectivo ? 'Comisión cobrada' : 'Transferido al técnico'}">Listo</span>
+                  <form th:if="${!f.liquidado}" th:action="@{/admin/comisiones/{id}/liquidar(id=${f.pago.idPago})}" method="post"
+                        onsubmit="return confirm('¿Marcar como liquidado?');">
+                    <button type="submit" class="btn-outline btn-sm"
+                            th:text="${f.efectivo ? 'Ya cobré la comisión' : 'Ya transferí al técnico'}">Liquidar</button>
+                  </form>
+                </th:block>
+                <span th:if="${f.pago.estado != 'PAGADO'}" style="color:var(--muted-foreground);">—</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+  </div>
+</body>
+</html>

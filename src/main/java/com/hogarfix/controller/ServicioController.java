@@ -280,7 +280,9 @@ public class ServicioController {
     }
 
     @PostMapping("/{id}/finalizar")
-    public String finalizarSolicitud(@PathVariable("id") Long id, Principal principal) {
+    public String finalizarSolicitud(@PathVariable("id") Long id,
+                                     @RequestParam(value = "monto", required = false) BigDecimal montoCobrado,
+                                     Principal principal) {
         if (principal == null) return "redirect:/auth/login";
         var servOpt = servicioService.buscarPorId(id);
         if (servOpt.isEmpty()) return "redirect:/tecnicos/panel?error=notfound";
@@ -295,6 +297,13 @@ public class ServicioController {
             return "redirect:/tecnicos/panel?error=forbidden";
         }
 
+        // El técnico fija cuánto cuesta el servicio (entre S/ 10 y S/ 5000)
+        if (montoCobrado == null || montoCobrado.compareTo(BigDecimal.TEN) < 0
+                || montoCobrado.compareTo(BigDecimal.valueOf(5000)) > 0) {
+            return "redirect:/tecnicos/panel?error=monto";
+        }
+        montoCobrado = montoCobrado.setScale(2, java.math.RoundingMode.HALF_UP);
+
         java.util.Optional<Servicio> updatedOpt;
         try {
             updatedOpt = servicioServiceInternal.marcarFinalizado(id);
@@ -304,8 +313,10 @@ public class ServicioController {
         if (updatedOpt.isPresent()) {
             var updated = updatedOpt.get();
             try {
-                // crear pago pendiente para el cliente con monto estático S/120
-                java.math.BigDecimal monto = java.math.BigDecimal.valueOf(120L);
+                // crear pago pendiente para el cliente con el monto que fijó el técnico
+                java.math.BigDecimal monto = montoCobrado;
+                updated.setMonto(monto);
+                servicioServiceInternal.registrarServicio(updated);
                 String metodoElegido = (updated.getMetodoPagoPreferido() != null
                         && !updated.getMetodoPagoPreferido().isBlank())
                                 ? updated.getMetodoPagoPreferido()

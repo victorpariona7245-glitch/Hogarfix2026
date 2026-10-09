@@ -38,6 +38,7 @@
      th:classappend="${activo == 'administradores'} ? 'active'">Administradores</a>
   <a th:href="@{/admin/actividad}" th:classappend="${activo == 'actividad'} ? 'active'">Actividad</a>
   <a th:href="@{/admin/pagos}" th:classappend="${activo == 'pagos'} ? 'active'">Pagos</a>
+  <a th:href="@{/admin/comisiones}" th:classappend="${activo == 'comisiones'} ? 'active'">Cobros y comisiones</a>
   <a th:href="@{/admin/certificados}" th:classappend="${activo == 'certificados'} ? 'active'">
     <span>Certificados</span>
     <span th:if="${certificadosPendientesCount != null and certificadosPendientesCount > 0}"

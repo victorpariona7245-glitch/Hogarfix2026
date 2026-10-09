@@ -25,6 +25,7 @@ public class PagoDTO {
     private String metodoPago;
     private LocalDateTime fechaPago;
     private String estado;
+    private String notaRevision;
 
     // Campos derivados para la vista (evitan exponer entidades JPA en la plantilla)
     private String servicioDescripcion;

@@ -20,6 +20,7 @@ public class PagoMapper {
                 .metodoPago(pago.getMetodoPago())
                 .fechaPago(pago.getFechaPago())
                 .estado(pago.getEstado())
+                .notaRevision(pago.getNotaRevision())
                 .createdAt(pago.getCreatedAt());
 
         if (pago.getServicio() != null) {

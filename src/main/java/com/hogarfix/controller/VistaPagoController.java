@@ -29,6 +29,14 @@ public class VistaPagoController {
     private final MercadoPagoService mercadoPagoService;
     private static final Logger logger = LoggerFactory.getLogger(VistaPagoController.class);
 
+    // Datos para recibir pagos por Yape/Plin (se configuran en Railway, nunca en el código)
+    @org.springframework.beans.factory.annotation.Value("${YAPE_NUMERO:}")
+    private String yapeNumero;
+    @org.springframework.beans.factory.annotation.Value("${YAPE_TITULAR:}")
+    private String yapeTitular;
+    @org.springframework.beans.factory.annotation.Value("${YAPE_QR_URL:}")
+    private String yapeQrUrl;
+
     @GetMapping("/pagos")
     public String verPagos(Principal principal, HttpSession session, Model model, @org.springframework.web.bind.annotation.RequestParam(value = "pagoId", required = false) Long pagoId, jakarta.servlet.http.HttpServletRequest request) {
         Cliente cliente = null;
@@ -80,6 +88,10 @@ public class VistaPagoController {
         model.addAttribute("pagos", pagosDto);
         model.addAttribute("cliente", cliente);
         model.addAttribute("mpConfigurado", mercadoPagoService.estaConfigurado());
+        model.addAttribute("yapeConfigurado", yapeNumero != null && !yapeNumero.isBlank());
+        model.addAttribute("yapeNumero", yapeNumero);
+        model.addAttribute("yapeTitular", yapeTitular);
+        model.addAttribute("yapeQrUrl", yapeQrUrl);
         // Exponer token CSRF para llamadas fetch desde JS
         Object csrf = request.getAttribute("_csrf");
         if (csrf != null) model.addAttribute("_csrf", csrf);
@@ -116,8 +128,38 @@ public class VistaPagoController {
             return new RedirectView("/pagos");
         }
 
+        if (!"PENDIENTE".equalsIgnoreCase(pagoOpt.get().getEstado())) {
+            redirectAttributes.addFlashAttribute("mensajeError", "Este pago ya no está pendiente");
+            return new RedirectView("/pagos?pagoId=" + id);
+        }
+
         pagoService.marcarPagadoConReferencia(id, "efectivo", "CONFIRMADO_POR_CLIENTE");
         redirectAttributes.addFlashAttribute("mensajeExito", "¡Gracias! Confirmamos tu pago en efectivo.");
         return new RedirectView("/");
+    }
+
+    /**
+     * El cliente informa que pagó por Yape o Plin al número de HogarFix y envía su nº de operación.
+     * El pago queda EN_REVISION hasta que un administrador confirme que el dinero llegó.
+     */
+    @PostMapping("/pagos/{id}/reportar-manual")
+    public RedirectView reportarPagoManual(@PathVariable("id") Long id,
+            @org.springframework.web.bind.annotation.RequestParam("metodo") String metodo,
+            @org.springframework.web.bind.annotation.RequestParam("codigo") String codigo,
+            RedirectAttributes redirectAttributes) {
+
+        var pagoOpt = pagoService.buscarPorIdConDetalle(id);
+        if (pagoOpt.isEmpty() || !com.hogarfix.config.SecurityUtils.puedeAccederAPago(pagoOpt.get())) {
+            redirectAttributes.addFlashAttribute("mensajeError", "No se pudo registrar el pago");
+            return new RedirectView("/pagos");
+        }
+        try {
+            pagoService.reportarPagoManual(id, metodo, codigo);
+            redirectAttributes.addFlashAttribute("mensajeExito",
+                    "Recibimos tu comprobante. Lo estamos verificando y te avisaremos por aquí.");
+        } catch (IllegalStateException ex) {
+            redirectAttributes.addFlashAttribute("mensajeError", ex.getMessage());
+        }
+        return new RedirectView("/pagos?pagoId=" + id);
     }
 }

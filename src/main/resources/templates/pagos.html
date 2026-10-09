@@ -64,47 +64,108 @@
             <div class="w-full p-3 rounded-md border border-slate-200 bg-slate-50 font-semibold" th:text="${pago != null ? ('S/ ' + pago.monto) : 'S/ 0.00'}">S/ 0.00</div>
           </div>
 
-          <!-- Caso: el cliente eligió pagar en EFECTIVO al solicitar el servicio -->
-          <div th:if="${pago != null and pago.metodoPago == 'efectivo' and pago.estado != 'PAGADO'}"
-               class="p-4 rounded-md text-sm" style="background:#e0f2fe; color:#075985;">
-            Elegiste pagar <strong>en efectivo</strong> directamente al técnico.
-            Cuando le entregues el dinero, confirma aquí para cerrar la solicitud.
-          </div>
-
-          <!-- Aviso cuando MercadoPago no está configurado todavía (solo aplica a pagos con tarjeta) -->
-          <div th:if="${!mpConfigurado and pago != null and pago.metodoPago != 'efectivo'}" class="p-4 rounded-md text-sm" style="background:#fef3c7; color:#92400e;">
-            La pasarela de pago (MercadoPago) todavía no está configurada. Contacta al administrador del sistema.
-          </div>
-
           <div th:if="${mensajeError}" class="p-4 rounded-md text-sm" style="background:#fee2e2; color:#991b1b;">
             <span th:text="${mensajeError}">Ocurrió un error</span>
           </div>
+          <div th:if="${mensajeExito}" class="p-4 rounded-md text-sm" style="background:#dcfce7; color:#166534;">
+            <span th:text="${mensajeExito}">Listo</span>
+          </div>
 
-          <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+          <!-- Ya pagado -->
+          <div th:if="${pago != null and pago.estado == 'PAGADO'}" class="p-4 rounded-md text-sm" style="background:#dcfce7; color:#166534;">
+            ✓ Este servicio ya está pagado. ¡Gracias por confiar en HogarFix!
+          </div>
 
-            <!-- Botón: confirmar pago en efectivo -->
-            <form th:if="${pago != null and pago.metodoPago == 'efectivo' and pago.estado != 'PAGADO'}"
-                  th:action="@{/pagos/{id}/confirmar-efectivo(id=${pago.idPago})}" method="post">
-              <button type="submit" class="btn-primary" style="background-color:#16a34a;">
-                Ya pagué en efectivo
-              </button>
-            </form>
+          <!-- Comprobante Yape/Plin en revisión -->
+          <div th:if="${pago != null and pago.estado == 'EN_REVISION'}" class="p-4 rounded-md text-sm" style="background:#dbeafe; color:#1e40af;">
+            Recibimos tu comprobante y lo estamos verificando. Apenas lo confirmemos te avisaremos con una notificación 🔔.
+          </div>
 
-            <!-- Botón: pagar con MercadoPago (solo si el método NO es efectivo) -->
-            <a th:if="${pago != null and pago.metodoPago != 'efectivo' and mpConfigurado}"
-               th:href="@{/pagos/{id}/mp-iniciar(id=${pago.idPago})}"
-               class="btn-primary inline-block text-center"
-               style="background-color:#009EE3;">
-              Pagar con MercadoPago
-            </a>
-            <button th:if="${pago != null and pago.metodoPago != 'efectivo' and !mpConfigurado}"
-                    type="button" class="btn-primary" disabled style="opacity:.5;">
-              Pagar con MercadoPago
-            </button>
+          <!-- Rechazado por el admin: el cliente puede volver a intentar -->
+          <div th:if="${pago != null and pago.estado == 'PENDIENTE' and pago.notaRevision != null}" class="p-4 rounded-md text-sm" style="background:#fef3c7; color:#92400e;">
+            No pudimos verificar tu pago anterior: <strong th:text="${pago.notaRevision}">motivo</strong>.
+            Revisa el número de operación y vuelve a intentarlo.
+          </div>
 
-            <span th:if="${pago != null and pago.metodoPago != 'efectivo'}" class="text-xs text-slate-400">
-              Ambiente de pruebas (sandbox) · No se cobra dinero real
-            </span>
+          <!-- Elegir cómo pagar -->
+          <div th:if="${pago != null and pago.estado != 'PAGADO' and pago.estado != 'EN_REVISION'}">
+            <p class="text-sm text-slate-600 mb-2">Elige cómo pagar</p>
+            <div class="flex flex-wrap gap-2 mb-4">
+              <button type="button" class="metodo-btn px-3 py-2 rounded-md border border-slate-200 bg-white text-sm" data-metodo="tarjeta">💳 Tarjeta / MercadoPago</button>
+              <button type="button" class="metodo-btn px-3 py-2 rounded-md border border-slate-200 bg-white text-sm" data-metodo="yape">📱 Yape / Plin</button>
+              <button type="button" class="metodo-btn px-3 py-2 rounded-md border border-slate-200 bg-white text-sm" data-metodo="efectivo">💵 Efectivo</button>
+            </div>
+
+            <!-- Tarjeta (MercadoPago) -->
+            <div class="metodo-panel" data-panel="tarjeta">
+              <div th:if="${!mpConfigurado}" class="p-4 rounded-md text-sm" style="background:#fef3c7; color:#92400e;">
+                La pasarela de pago (MercadoPago) todavía no está configurada. Elige otro método o contacta al administrador.
+              </div>
+              <a th:if="${mpConfigurado}" th:href="@{/pagos/{id}/mp-iniciar(id=${pago.idPago})}"
+                 class="btn-primary inline-block text-center" style="background-color:#009EE3;">
+                Pagar con MercadoPago
+              </a>
+              <p th:if="${mpConfigurado}" class="text-xs text-slate-400 mt-2">Ambiente de pruebas (sandbox) · No se cobra dinero real</p>
+            </div>
+
+            <!-- Yape / Plin -->
+            <div class="metodo-panel" data-panel="yape" style="display:none;">
+              <div th:if="${!yapeConfigurado}" class="p-4 rounded-md text-sm" style="background:#fef3c7; color:#92400e;">
+                Yape/Plin todavía no está disponible. Elige otro método o contacta al administrador.
+              </div>
+              <div th:if="${yapeConfigurado}" class="space-y-3 text-sm">
+                <div class="p-4 rounded-md" style="background:#f3e8ff; color:#581c87;">
+                  <p>1. Yapea o Plinea <strong th:text="${'S/ ' + pago.monto}">S/ 0.00</strong> al número:</p>
+                  <p class="text-xl font-bold my-1" th:text="${yapeNumero}">999 999 999</p>
+                  <p th:if="${yapeTitular != null and !yapeTitular.isBlank()}">a nombre de <strong th:text="${yapeTitular}">Titular</strong></p>
+                  <img th:if="${yapeQrUrl != null and !yapeQrUrl.isBlank()}" th:src="${yapeQrUrl}" alt="QR de pago"
+                       style="max-width:180px; margin-top:8px; border-radius:8px;" />
+                </div>
+                <form th:action="@{/pagos/{id}/reportar-manual(id=${pago.idPago})}" method="post" class="space-y-3">
+                  <p>2. Escribe el número de operación que te salió en el comprobante:</p>
+                  <div class="flex flex-wrap gap-2">
+                    <select name="metodo" class="p-2 rounded-md border border-slate-200 bg-white">
+                      <option value="yape">Yape</option>
+                      <option value="plin">Plin</option>
+                    </select>
+                    <input type="text" name="codigo" required minlength="4" maxlength="30" pattern="[A-Za-z0-9\-]{4,30}"
+                           placeholder="N° de operación" class="flex-1 p-2 rounded-md border border-slate-200" style="min-width:160px;" />
+                  </div>
+                  <button type="submit" class="btn-primary" style="background-color:#7c3aed;">Ya pagué, enviar comprobante</button>
+                  <p class="text-xs text-slate-400">Un administrador verificará que el dinero llegó antes de confirmar tu pago.</p>
+                </form>
+              </div>
+            </div>
+
+            <!-- Efectivo -->
+            <div class="metodo-panel" data-panel="efectivo" style="display:none;">
+              <div class="p-4 rounded-md text-sm mb-3" style="background:#e0f2fe; color:#075985;">
+                Paga <strong th:text="${'S/ ' + pago.monto}">S/ 0.00</strong> en efectivo directamente al técnico.
+                Cuando le entregues el dinero, confirma aquí para cerrar la solicitud.
+              </div>
+              <form th:action="@{/pagos/{id}/confirmar-efectivo(id=${pago.idPago})}" method="post"
+                    onsubmit="return confirm('¿Confirmas que ya le pagaste al técnico en efectivo?');">
+                <button type="submit" class="btn-primary" style="background-color:#16a34a;">Ya pagué en efectivo</button>
+              </form>
+            </div>
+
+            <script th:inline="javascript">
+              (function () {
+                var inicial = /*[[${pago.metodoPago == 'efectivo' ? 'efectivo' : ((pago.metodoPago == 'yape' or pago.metodoPago == 'plin') ? 'yape' : 'tarjeta')}]]*/ 'tarjeta';
+                function mostrar(m) {
+                  document.querySelectorAll('.metodo-panel').forEach(function (p) {
+                    p.style.display = p.dataset.panel === m ? 'block' : 'none';
+                  });
+                  document.querySelectorAll('.metodo-btn').forEach(function (b) {
+                    b.classList.toggle('method-active', b.dataset.metodo === m);
+                  });
+                }
+                document.querySelectorAll('.metodo-btn').forEach(function (b) {
+                  b.addEventListener('click', function () { mostrar(b.dataset.metodo); });
+                });
+                mostrar(inicial);
+              })();
+            </script>
           </div>
         </div>
       </section>

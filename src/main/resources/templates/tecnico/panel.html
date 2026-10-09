@@ -415,10 +415,17 @@
                             th:name="${_csrf.parameterName}"
                             th:value="${_csrf.token}"
                           />
+                          <input
+                            type="number" name="monto" min="10" max="5000" step="0.50" required
+                            placeholder="Monto S/"
+                            title="Cuánto cobras por este servicio (S/ 10 a S/ 5000)"
+                            class="border rounded p-1 text-xs" style="width: 90px; border-color: var(--border);"
+                          />
                           <button
                             type="submit"
                             class="px-2 py-1 rounded text-white text-xs font-medium"
                             style="background-color: var(--primary);"
+                            onclick="return confirm('Se le cobrará al cliente el monto indicado. ¿Terminar el servicio?');"
                           >
                             Terminar
                           </button>
