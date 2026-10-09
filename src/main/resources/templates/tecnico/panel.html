@@ -312,7 +312,7 @@
                   <td th:text="${s.urgencia != null ? s.urgencia : '-'}">media</td>
                   <td>
                     <span th:if="${s.metodoPagoPreferido == 'efectivo'}" class="badge-soft" style="background:#dcfce7; color:#166534;">Efectivo</span>
-                    <span th:if="${s.metodoPagoPreferido != 'efectivo'}" class="badge-soft" style="background:#dbeafe; color:#1e40af;">Tarjeta</span>
+                    <span th:if="${s.metodoPagoPreferido != 'efectivo'}" class="badge-soft" style="background:#f3e8ff; color:#6b21a8;">Yape / Plin</span>
                     <div th:if="${s.estado == 'FINALIZADO'}" style="margin-top:4px;">
                       <span th:if="${pagoEstados.get(s.idServicio) == 'PAGADO'}" class="badge-soft" style="background:#dcfce7; color:#166534; font-size:0.75em;">✓ Pagado</span>
                       <span th:unless="${pagoEstados.get(s.idServicio) == 'PAGADO'}" class="badge-soft" style="background:#fef3c7; color:#92400e; font-size:0.75em;">Pago pendiente</span>
