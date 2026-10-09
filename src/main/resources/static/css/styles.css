@@ -123,7 +123,8 @@ body {
 
 .mobile-menu { display: none; }
 .mobile-menu.active { display: block; }
-@media (max-width: 768px) { .desktop-nav { display: none; } }
+/* !important: las clases de Tailwind (flex) cargan después y, sin esto, el menú de escritorio se vería en el celular */
+@media (max-width: 767px) { .desktop-nav { display: none !important; } }
 
 .hero-gradient {
     background: linear-gradient(135deg, var(--background) 0%, var(--secondary) 100%);
