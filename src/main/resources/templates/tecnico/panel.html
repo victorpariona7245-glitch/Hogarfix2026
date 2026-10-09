@@ -312,7 +312,7 @@
                   <td th:text="${s.urgencia != null ? s.urgencia : '-'}">media</td>
                   <td>
                     <span th:if="${s.metodoPagoPreferido == 'efectivo'}" class="badge-soft" style="background:#dcfce7; color:#166534;">Efectivo</span>
-                    <span th:if="${s.metodoPagoPreferido != 'efectivo'}" class="badge-soft" style="background:#f3e8ff; color:#6b21a8;">Yape / Plin</span>
+                    <span th:if="${s.metodoPagoPreferido != 'efectivo'}" class="badge-soft" style="background:#dbeafe; color:#1e40af;">Tarjeta</span>
                     <div th:if="${s.estado == 'FINALIZADO'}" style="margin-top:4px;">
                       <span th:if="${pagoEstados.get(s.idServicio) == 'PAGADO'}" class="badge-soft" style="background:#dcfce7; color:#166534; font-size:0.75em;">✓ Pagado</span>
                       <span th:unless="${pagoEstados.get(s.idServicio) == 'PAGADO'}" class="badge-soft" style="background:#fef3c7; color:#92400e; font-size:0.75em;">Pago pendiente</span>
@@ -349,6 +349,7 @@
                         </form>
                         <form
                           th:action="@{/servicios/{id}/cancelar(id=${s.idServicio})}"
+                          data-confirm="El cliente será avisado de la cancelación." data-confirm-titulo="¿Cancelar esta solicitud?" data-confirm-ok="Sí, cancelar" data-confirm-tipo="peligro"
                           method="post"
                           style="display: inline; margin-left: 6px"
                         >
@@ -376,7 +377,8 @@
                           <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                           <button type="submit" class="px-2 py-1 rounded text-white text-xs font-medium" style="background-color:var(--primary);">Iniciar servicio</button>
                         </form>
-                        <form th:action="@{/servicios/{id}/cancelar(id=${s.idServicio})}" method="post" style="display:inline">
+                        <form th:action="@{/servicios/{id}/cancelar(id=${s.idServicio})}"
+                          data-confirm="El cliente será avisado de la cancelación." data-confirm-titulo="¿Cancelar esta solicitud?" data-confirm-ok="Sí, cancelar" data-confirm-tipo="peligro" method="post" style="display:inline">
                           <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                           <button type="submit" class="px-2 py-1 rounded text-white text-xs font-medium" style="background-color:#dc2626;">Cancelar</button>
                         </form>
@@ -392,7 +394,8 @@
                           <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                           <button type="submit" class="px-2 py-1 rounded text-white text-xs font-medium" style="background-color:var(--primary);">Iniciar servicio</button>
                         </form>
-                        <form th:action="@{/servicios/{id}/cancelar(id=${s.idServicio})}" method="post" style="display:inline">
+                        <form th:action="@{/servicios/{id}/cancelar(id=${s.idServicio})}"
+                          data-confirm="El cliente será avisado de la cancelación." data-confirm-titulo="¿Cancelar esta solicitud?" data-confirm-ok="Sí, cancelar" data-confirm-tipo="peligro" method="post" style="display:inline">
                           <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                           <button type="submit" class="px-2 py-1 rounded text-white text-xs font-medium" style="background-color:#dc2626;">Cancelar</button>
                         </form>
@@ -406,6 +409,7 @@
                       <div th:case="'EN_PROCESO'">
                         <form
                           th:action="@{/servicios/{id}/finalizar(id=${s.idServicio})}"
+                          data-confirm="Se le cobrará al cliente el monto que indicaste." data-confirm-titulo="¿Terminar el servicio?" data-confirm-ok="Sí, terminar"
                           method="post"
                           style="display: inline"
                         >
@@ -425,7 +429,6 @@
                             type="submit"
                             class="px-2 py-1 rounded text-white text-xs font-medium"
                             style="background-color: var(--primary);"
-                            onclick="return confirm('Se le cobrará al cliente el monto indicado. ¿Terminar el servicio?');"
                           >
                             Terminar
                           </button>
@@ -884,5 +887,6 @@
       <i data-lucide="message-circle" class="w-6 h-6"></i>
     </button>
   </div>
+<script src="/js/confirmar.js"></script>
   </body>
 </html>

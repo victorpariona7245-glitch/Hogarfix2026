@@ -131,7 +131,7 @@
                 Cuando le entregues el dinero, confirma aquí para cerrar la solicitud.
               </div>
               <form th:action="@{/pagos/{id}/confirmar-efectivo(id=${pago.idPago})}" method="post"
-                    onsubmit="return confirm('¿Confirmas que ya le pagaste al técnico en efectivo?');">
+                    data-confirm="Confírmalo solo si ya le entregaste el dinero al técnico." data-confirm-titulo="¿Ya pagaste en efectivo?" data-confirm-ok="Sí, ya pagué">
                 <button type="submit" class="btn-primary" style="background-color:#16a34a;">Ya pagué en efectivo</button>
               </form>
             </div>
@@ -174,5 +174,6 @@
       </div>
     </aside>
   </main>
+<script src="/js/confirmar.js"></script>
 </body>
 </html>

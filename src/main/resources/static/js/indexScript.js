@@ -1,52 +1,54 @@
-// Initialize Lucide icons
-    lucide.createIcons();
+/*
+ * Confirmaciones bonitas (SweetAlert2) para formularios.
+ * Uso: <form data-confirm="¿Seguro?" data-confirm-titulo="Título" data-confirm-ok="Sí, hacerlo" ...>
+ */
+(function () {
+  function cargarSwal(cb) {
+    if (window.Swal) return cb();
+    var s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/sweetalert2@11";
+    s.onload = cb;
+    s.onerror = function () { cb(); };
+    document.head.appendChild(s);
+  }
 
-    // Mobile menu toggle
-    function toggleMobileMenu() {
-        const mobileMenu = document.querySelector('.mobile-menu');
-        const menuIcon = document.getElementById('menu-icon');
-        const closeIcon = document.getElementById('close-icon');
+  function colorPrimario() {
+    var c = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim();
+    return c || "#030213";
+  }
 
-        mobileMenu.classList.toggle('active');
-        menuIcon.classList.toggle('hidden');
-        closeIcon.classList.toggle('hidden');
+  document.addEventListener("submit", function (e) {
+    var f = e.target;
+    if (!f || !f.dataset || !f.dataset.confirm || f.dataset.confirmado === "1") return;
+    e.preventDefault();
+    var enviador = e.submitter && f.contains(e.submitter) ? e.submitter : null;
+
+    function enviar() {
+      f.dataset.confirmado = "1";
+      if (f.requestSubmit) f.requestSubmit(enviador || undefined);
+      else f.submit();
     }
 
-    // Smooth scrolling for anchor links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-
-                // Close mobile menu if open
-                const mobileMenu = document.querySelector('.mobile-menu');
-                if (mobileMenu.classList.contains('active')) {
-                    toggleMobileMenu();
-                }
-            }
-        });
+    cargarSwal(function () {
+      if (!window.Swal) {
+        if (window.confirm(f.dataset.confirm)) enviar();
+        return;
+      }
+      var peligro = f.dataset.confirmTipo === "peligro";
+      Swal.fire({
+        title: f.dataset.confirmTitulo || "¿Estás seguro?",
+        text: f.dataset.confirm,
+        icon: peligro ? "warning" : "question",
+        showCancelButton: true,
+        confirmButtonText: f.dataset.confirmOk || "Sí, continuar",
+        cancelButtonText: "Volver",
+        confirmButtonColor: peligro ? "#dc2626" : colorPrimario(),
+        cancelButtonColor: "#6b7280",
+        reverseButtons: true,
+        focusCancel: peligro
+      }).then(function (r) {
+        if (r.isConfirmed) enviar();
+      });
     });
-
-    // Contact form handling
-    document.querySelectorAll('.btn-primary').forEach(button => {
-        if (button.textContent.includes('Solicitar Servicio')) {
-            button.addEventListener('click', function() {
-                window.open('https://wa.me/51968459279?text=Hola, necesito solicitar un servicio técnico para mi hogar.', '_blank');
-            });
-        }
-    });
-
-    // Phone link handling
-    document.querySelectorAll('a[href^="tel:"]').forEach(link => {
-        link.addEventListener('click', function(e) {
-            if (window.innerWidth > 768) {
-                e.preventDefault();
-                window.open('https://wa.me/51968459279', '_blank');
-            }
-        });
-    });
+  }, true);
+})();

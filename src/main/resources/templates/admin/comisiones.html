@@ -48,7 +48,7 @@
               <td>
                 <div class="flex flex-wrap items-center gap-2">
                   <form th:action="@{/admin/comisiones/{id}/aprobar(id=${f.pago.idPago})}" method="post"
-                        onsubmit="return confirm('¿Confirmas que el dinero ya llegó a tu Yape/Plin?');">
+                        data-confirm="Confirma solo si el dinero ya llegó a tu Yape/Plin." data-confirm-titulo="¿Aprobar este pago?" data-confirm-ok="Sí, aprobar">
                     <button type="submit" class="btn-primary btn-sm" style="background-color:#16a34a;">Aprobar</button>
                   </form>
                   <form th:action="@{/admin/comisiones/{id}/rechazar(id=${f.pago.idPago})}" method="post" class="flex gap-1">
@@ -93,7 +93,7 @@
                   <span th:if="${f.liquidado}" class="badge-soft" style="background:#dcfce7; color:#166534;"
                         th:text="${f.efectivo ? 'Comisión cobrada' : 'Transferido al técnico'}">Listo</span>
                   <form th:if="${!f.liquidado}" th:action="@{/admin/comisiones/{id}/liquidar(id=${f.pago.idPago})}" method="post"
-                        onsubmit="return confirm('¿Marcar como liquidado?');">
+                        data-confirm="Quedará registrado como liquidado." data-confirm-titulo="¿Marcar como liquidado?" data-confirm-ok="Sí, marcar">
                     <button type="submit" class="btn-outline btn-sm"
                             th:text="${f.efectivo ? 'Ya cobré la comisión' : 'Ya transferí al técnico'}">Liquidar</button>
                   </form>
@@ -107,5 +107,6 @@
     </main>
     <footer th:replace="~{fragments/footer :: footer}"></footer>
   </div>
+<script src="/js/confirmar.js"></script>
 </body>
 </html>

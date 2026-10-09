@@ -141,7 +141,7 @@
                     💬 Chat
                   </button>
                   <form th:action="@{/servicios/{id}/cancelar-cliente(id=${s.idServicio})}" method="post" style="display:inline"
-                        onsubmit="return confirm('¿Seguro que quieres cancelar esta solicitud?');">
+                        data-confirm="Avisaremos al técnico de la cancelación." data-confirm-titulo="¿Cancelar tu solicitud?" data-confirm-ok="Sí, cancelar" data-confirm-tipo="peligro">
                     <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                     <button type="submit" class="btn-outline btn-sm" style="color:#dc2626; border-color:#dc2626;">Cancelar</button>
                   </form>
@@ -180,7 +180,7 @@
               <button type="button" class="btn-outline btn-sm" th:onclick="|verHistorial(${s.idServicio})|">Historial</button>
               <th:block th:if="${s.estado == 'ACEPTADO' or s.estado == 'EN_CAMINO'}">
                 <form th:action="@{/servicios/{id}/cancelar-cliente(id=${s.idServicio})}" method="post" style="display:inline"
-                        onsubmit="return confirm('¿Seguro que quieres cancelar esta solicitud?');">
+                        data-confirm="Avisaremos al técnico de la cancelación." data-confirm-titulo="¿Cancelar tu solicitud?" data-confirm-ok="Sí, cancelar" data-confirm-tipo="peligro">
                     <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                     <button type="submit" class="btn-outline btn-sm" style="color:#dc2626; border-color:#dc2626;">Cancelar</button>
                   </form>
@@ -617,5 +617,6 @@
       <i data-lucide="message-circle" class="w-6 h-6"></i>
     </button>
   </div>
+<script src="/js/confirmar.js"></script>
   </body>
 </html>
