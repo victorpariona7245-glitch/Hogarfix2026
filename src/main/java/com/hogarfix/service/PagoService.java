@@ -258,45 +258,14 @@ public class PagoService {
         try {
             String cliente = p.getCliente() != null ? p.getCliente().getNombres() : "Un cliente";
             String texto = cliente + " informó un pago por " + m.toUpperCase() + " de S/ " + p.getMonto()
-                    + " (operación " + c + "). Confírmalo cuando te llegue";
-            var tecnico = (p.getServicio() != null) ? p.getServicio().getTecnico() : null;
-            if (tecnico != null && tecnico.getUsuario() != null) {
-                // El dinero va directo al técnico: él es quien confirma que le llegó
-                notificacionService.crear(tecnico.getUsuario(), "PAGO", texto, "/tecnicos/panel", p.getIdPago());
-            } else {
-                for (var admin : usuarioRepository.findByRol_NombreIgnoreCase("ADMIN")) {
-                    notificacionService.crear(admin, "PAGO", texto, "/admin/comisiones", p.getIdPago());
-                }
+                    + " (operación " + c + "). Revísalo en tu Yape/Plin y apruébalo";
+            for (var admin : usuarioRepository.findByRol_NombreIgnoreCase("ADMIN")) {
+                notificacionService.crear(admin, "PAGO", texto, "/admin/comisiones", p.getIdPago());
             }
         } catch (Exception ex) {
             log.warn("No se pudo avisar del pago {}: {}", id, ex.getMessage());
         }
         return guardado;
-    }
-
-    /** El técnico confirma que el Yape/Plin le llegó. Solo el técnico de ese servicio puede hacerlo. */
-    @Transactional
-    public Pago aprobarPorTecnico(Long idServicio, String emailTecnico) {
-        Pago p = pagoDelTecnico(idServicio, emailTecnico);
-        return aprobarManual(p.getIdPago());
-    }
-
-    /** El técnico indica que el dinero NO le llegó: el pago vuelve a PENDIENTE para el cliente. */
-    @Transactional
-    public Pago rechazarPorTecnico(Long idServicio, String emailTecnico, String motivo) {
-        Pago p = pagoDelTecnico(idServicio, emailTecnico);
-        return rechazarManual(p.getIdPago(), motivo);
-    }
-
-    private Pago pagoDelTecnico(Long idServicio, String emailTecnico) {
-        Pago p = pagoRepository.findByServicio_IdServicio(idServicio)
-                .orElseThrow(() -> new IllegalStateException("Pago no encontrado"));
-        var tecnico = (p.getServicio() != null) ? p.getServicio().getTecnico() : null;
-        if (tecnico == null || tecnico.getUsuario() == null || emailTecnico == null
-                || !emailTecnico.equalsIgnoreCase(tecnico.getUsuario().getEmail())) {
-            throw new IllegalStateException("No tienes permiso sobre este pago");
-        }
-        return p;
     }
 
     /** El admin confirma que el dinero llegó. */
@@ -344,7 +313,7 @@ public class PagoService {
         return guardado;
     }
 
-    /** Marca que ya se liquidó: transferido al técnico (pagos online) o comisión cobrada (efectivo). */
+    /** Marca que ya se liquidó: transferido al técnico (Yape/Plin) o comisión cobrada (efectivo). */
     @Transactional
     public Pago marcarLiquidado(Long id) {
         Pago p = pagoRepository.findById(id).orElseThrow(() -> new IllegalStateException("Pago no encontrado"));
@@ -353,7 +322,19 @@ public class PagoService {
         }
         p.setLiquidado(true);
         p.setFechaLiquidacion(java.time.LocalDateTime.now());
-        return pagoRepository.save(p);
+        Pago guardado = pagoRepository.save(p);
+        try {
+            var tecnico = (p.getServicio() != null) ? p.getServicio().getTecnico() : null;
+            if (!"efectivo".equalsIgnoreCase(p.getMetodoPago()) && tecnico != null && tecnico.getUsuario() != null) {
+                BigDecimal neto = p.getMontoTecnico() != null ? p.getMontoTecnico()
+                        : p.getMonto().subtract(calcularComision(p.getMonto()));
+                notificacionService.crear(tecnico.getUsuario(), "PAGO",
+                        "HogarFix te transfirió S/ " + neto + " por tu servicio", "/tecnicos/panel", p.getIdPago());
+            }
+        } catch (Exception ex) {
+            log.warn("No se pudo avisar la transferencia del pago {}: {}", id, ex.getMessage());
+        }
+        return guardado;
     }
 
     private void notificarPagado(Pago p) {
@@ -361,14 +342,17 @@ public class PagoService {
             BigDecimal comision = p.getComision() != null ? p.getComision() : calcularComision(p.getMonto());
             BigDecimal neto = p.getMontoTecnico() != null ? p.getMontoTecnico() : p.getMonto().subtract(comision);
             var tecnico = (p.getServicio() != null) ? p.getServicio().getTecnico() : null;
+            boolean efectivo = "efectivo".equalsIgnoreCase(p.getMetodoPago());
 
             if (tecnico != null && tecnico.getUsuario() != null) {
-                notificacionService.crear(tecnico.getUsuario(), "PAGO",
-                        "Pago de S/ " + p.getMonto() + " confirmado. Te quedan S/ " + neto
-                                + "; entrega a HogarFix la comisión de S/ " + comision,
-                        "/tecnicos/panel", p.getIdPago());
+                String msg = efectivo
+                        ? "El cliente pagó S/ " + p.getMonto() + " en efectivo. Entrega a HogarFix la comisión de S/ "
+                                + comision + " (te quedan S/ " + neto + ")"
+                        : "El cliente pagó S/ " + p.getMonto() + " a HogarFix. Te transferiremos S/ " + neto
+                                + " (comisión S/ " + comision + ")";
+                notificacionService.crear(tecnico.getUsuario(), "PAGO", msg, "/tecnicos/panel", p.getIdPago());
             }
-            if (p.getCliente() != null) {
+            if (!efectivo && p.getCliente() != null) {
                 notificacionService.crear(p.getCliente().getUsuario(), "PAGO",
                         "Tu pago de S/ " + p.getMonto() + " fue confirmado. ¡Gracias!", "/clientes/perfil",
                         p.getIdPago());

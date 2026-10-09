@@ -54,9 +54,10 @@ public class AdminComisionController {
         List<FilaCobro> enRevision = new ArrayList<>();
         BigDecimal totalCobrado = BigDecimal.ZERO;
         BigDecimal totalComision = BigDecimal.ZERO;
-        BigDecimal comisionPorCobrar = BigDecimal.ZERO;
-        BigDecimal comisionCobrada = BigDecimal.ZERO;
+        BigDecimal comisionPorCobrar = BigDecimal.ZERO; // solo efectivo: el técnico la debe
+        BigDecimal porTransferir = BigDecimal.ZERO; // Yape/Plin: el dinero lo tienes tú, falta pagarle al técnico
         java.util.Map<String, BigDecimal> pendientePorTecnico = new java.util.TreeMap<>();
+        java.util.Map<String, BigDecimal> transferirPorTecnico = new java.util.TreeMap<>();
         java.util.Set<String> bloqueados = new java.util.HashSet<>();
         java.time.LocalDateTime limite = java.time.LocalDateTime.now().minusDays(pagoService.getDiasGracia());
 
@@ -83,15 +84,19 @@ public class AdminComisionController {
             if ("PAGADO".equalsIgnoreCase(p.getEstado())) {
                 totalCobrado = totalCobrado.add(monto);
                 totalComision = totalComision.add(comision);
-                // Todo el dinero va directo al técnico: él le debe la comisión a HogarFix
-                if (liquidado) {
-                    comisionCobrada = comisionCobrada.add(comision);
-                } else {
-                    comisionPorCobrar = comisionPorCobrar.add(comision);
-                    pendientePorTecnico.merge(tecnico, comision, BigDecimal::add);
-                    if (pagoService.getDiasGracia() > 0 && p.getComision() != null && p.getFechaPago() != null
-                            && p.getFechaPago().isBefore(limite)) {
-                        bloqueados.add(tecnico);
+                if (!liquidado) {
+                    if (efectivo) {
+                        // El técnico cobró en mano: él le debe la comisión a HogarFix
+                        comisionPorCobrar = comisionPorCobrar.add(comision);
+                        pendientePorTecnico.merge(tecnico, comision, BigDecimal::add);
+                        if (pagoService.getDiasGracia() > 0 && p.getComision() != null && p.getFechaPago() != null
+                                && p.getFechaPago().isBefore(limite)) {
+                            bloqueados.add(tecnico);
+                        }
+                    } else {
+                        // Yape/Plin: el dinero entró a HogarFix, falta transferirle su parte al técnico
+                        porTransferir = porTransferir.add(neto);
+                        transferirPorTecnico.merge(tecnico, neto, BigDecimal::add);
                     }
                 }
             }
@@ -102,7 +107,8 @@ public class AdminComisionController {
         model.addAttribute("totalCobrado", totalCobrado);
         model.addAttribute("totalComision", totalComision);
         model.addAttribute("comisionPorCobrar", comisionPorCobrar);
-        model.addAttribute("comisionCobrada", comisionCobrada);
+        model.addAttribute("porTransferir", porTransferir);
+        model.addAttribute("transferirPorTecnico", transferirPorTecnico);
         model.addAttribute("pendientePorTecnico", pendientePorTecnico);
         model.addAttribute("bloqueados", bloqueados);
         model.addAttribute("diasGracia", pagoService.getDiasGracia());
@@ -145,9 +151,9 @@ public class AdminComisionController {
         if (principal == null) return "redirect:/auth/login";
         try {
             Pago p = pagoService.marcarLiquidado(id);
-            auditoriaService.registrar(principal.getName(), "Cobró comisión",
+            auditoriaService.registrar(principal.getName(), "Liquidó pago",
                     "Pago #" + id + " (" + p.getMetodoPago() + ")");
-            ra.addFlashAttribute("mensajeExito", "Pago #" + id + " marcado: comisión cobrada.");
+            ra.addFlashAttribute("mensajeExito", "Pago #" + id + " marcado como liquidado.");
         } catch (IllegalStateException ex) {
             ra.addFlashAttribute("mensajeError", ex.getMessage());
         }
