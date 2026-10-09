@@ -39,6 +39,7 @@ public class ClienteController {
     private final com.hogarfix.service.PagoService pagoService;
     private final com.hogarfix.service.EmailService emailService;
     private final com.hogarfix.service.CalificacionService calificacionService;
+    private final com.hogarfix.service.NotificacionService notificacionService;
 
     @GetMapping
     public String listarClientes(Model model) {
@@ -83,7 +84,8 @@ public class ClienteController {
 
                 // servicios en proceso (técnico ya aceptó) — aquí se habilita el chat
                 var enProceso = servicios.stream()
-                        .filter(s -> "EN_PROCESO".equalsIgnoreCase(s.getEstado()))
+                        .filter(s -> java.util.List.of("ACEPTADO", "EN_CAMINO", "EN_PROCESO")
+                                .contains(String.valueOf(s.getEstado()).toUpperCase()))
                         .toList();
                 model.addAttribute("serviciosEnProceso", enProceso);
 
@@ -139,6 +141,15 @@ public class ClienteController {
                     .orElseThrow(() -> new RuntimeException("Servicio no encontrado"));
 
             calificacionService.calificarServicio(servicio, cliente, puntuacion, observacion);
+
+            try {
+                if (servicio.getTecnico() != null) {
+                    notificacionService.crear(servicio.getTecnico().getUsuario(), "CALIFICACION",
+                            "Recibiste una calificación de " + puntuacion + " ★", "/tecnicos/panel",
+                            servicio.getIdServicio());
+                }
+            } catch (Exception ignored) {
+            }
 
             redirectAttributes.addFlashAttribute("mensajeExito", "¡Gracias por tu calificación!");
         } catch (RuntimeException ex) {

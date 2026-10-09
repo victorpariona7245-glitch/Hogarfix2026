@@ -27,6 +27,7 @@ public class SolicitudExpiradaScheduler {
 
     private final ServicioRepository servicioRepository;
     private final EmailService emailService;
+    private final com.hogarfix.service.ServicioService servicioService;
 
     // Se ejecuta cada minuto
     @Scheduled(fixedRate = 60_000)
@@ -41,8 +42,9 @@ public class SolicitudExpiradaScheduler {
 
         for (Servicio s : vencidos) {
             try {
-                s.setEstado("CANCELADO");
-                servicioRepository.save(s);
+                servicioService.cambiarEstado(s.getIdServicio(), "CANCELADO",
+                        com.hogarfix.service.ServicioService.ACTOR_SISTEMA,
+                        "Venció sin respuesta del técnico (15 min)");
 
                 if (s.getCliente() != null && s.getCliente().getUsuario() != null) {
                     String emailCliente = s.getCliente().getUsuario().getEmail();

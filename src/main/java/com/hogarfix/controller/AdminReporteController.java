@@ -218,7 +218,8 @@ public class AdminReporteController {
             long[] c = conteos.computeIfAbsent(esp, k -> new long[3]);
             c[0]++;
             String estado = s.getEstado() == null ? "" : s.getEstado();
-            if (estado.equals("EN_PROCESO") || estado.equals("FINALIZADO")) {
+            if (estado.equals("ACEPTADO") || estado.equals("EN_CAMINO") || estado.equals("EN_PROCESO")
+                    || estado.equals("FINALIZADO")) {
                 c[1]++;
                 if (s.getTecnico() != null) {
                     tecnicosPorEsp.computeIfAbsent(esp, k -> new HashSet<>()).add(s.getTecnico().getIdTecnico());

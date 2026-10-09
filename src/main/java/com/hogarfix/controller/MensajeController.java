@@ -38,6 +38,7 @@ public class MensajeController {
     private final ServicioService servicioService;
     private final ClienteService clienteService;
     private final TecnicoService tecnicoService;
+    private final com.hogarfix.service.NotificacionService notificacionService;
 
     @GetMapping("/{idServicio}")
     public ResponseEntity<?> listarMensajes(@PathVariable Long idServicio, Principal principal) {
@@ -81,6 +82,17 @@ public class MensajeController {
         String contenido = body.get("contenido");
         try {
             Mensaje mensaje = mensajeService.enviarMensaje(servicio, autor, contenido);
+            try {
+                String cat = servicio.getCategoria() != null ? servicio.getCategoria().getNombre() : "servicio";
+                if (autor == Mensaje.Autor.CLIENTE && servicio.getTecnico() != null) {
+                    notificacionService.crearSiNoHayPendiente(servicio.getTecnico().getUsuario(), "MENSAJE",
+                            "Nuevo mensaje del cliente (" + cat + ")", "/tecnicos/panel", servicio.getIdServicio());
+                } else if (autor == Mensaje.Autor.TECNICO && servicio.getCliente() != null) {
+                    notificacionService.crearSiNoHayPendiente(servicio.getCliente().getUsuario(), "MENSAJE",
+                            "Nuevo mensaje de tu técnico (" + cat + ")", "/clientes/perfil", servicio.getIdServicio());
+                }
+            } catch (Exception ignored) {
+            }
             return ResponseEntity.ok(toMap(mensaje));
         } catch (RuntimeException ex) {
             return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));

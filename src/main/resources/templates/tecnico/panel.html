@@ -74,6 +74,7 @@
       >
         <a href="/" class="text-2xl font-medium text-primary">HogarFix</a>
         <div class="flex items-center space-x-3">
+          <div th:replace="~{fragments/notificaciones :: campana}"></div>
           <form th:action="@{/logout}" method="post">
             <button
               type="submit"
@@ -319,7 +320,9 @@
                   </td>
                   <td>
                     <div class="mb-2">
-                      <span class="badge-soft" th:text="${s.estado}">PENDIENTE</span>
+                      <span class="badge-soft" th:text="${#strings.replace(s.estado, '_', ' ')}">PENDIENTE</span>
+                      <button type="button" class="text-xs underline" style="margin-left:6px; color: var(--muted-foreground);"
+                              th:onclick="|verHistorial(${s.idServicio})|">Historial</button>
                     </div>
 
                     <!-- Acciones según estado -->
@@ -363,6 +366,42 @@
                             Rechazar
                           </button>
                         </form>
+                      </div>
+                      <div th:case="'ACEPTADO'">
+                        <form th:action="@{/servicios/{id}/en-camino(id=${s.idServicio})}" method="post" style="display:inline">
+                          <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                          <button type="submit" class="px-2 py-1 rounded text-white text-xs font-medium" style="background-color:#2563eb;">Voy en camino</button>
+                        </form>
+                        <form th:action="@{/servicios/{id}/iniciar(id=${s.idServicio})}" method="post" style="display:inline">
+                          <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                          <button type="submit" class="px-2 py-1 rounded text-white text-xs font-medium" style="background-color:var(--primary);">Iniciar servicio</button>
+                        </form>
+                        <form th:action="@{/servicios/{id}/cancelar(id=${s.idServicio})}" method="post" style="display:inline">
+                          <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                          <button type="submit" class="px-2 py-1 rounded text-white text-xs font-medium" style="background-color:#dc2626;">Cancelar</button>
+                        </form>
+                        <br />
+                        <button type="button" class="px-2 py-1 rounded text-xs font-medium border chat-trigger"
+                          style="margin-top:4px; border-color: var(--border);"
+                          th:attr="data-servicio-id=${s.idServicio}"
+                          th:data-nombre="${s.cliente != null ? s.cliente.nombres + (s.cliente.apellidoPaterno != null ? ' ' + s.cliente.apellidoPaterno : '') : 'Cliente'}"
+                          onclick="abrirChatFlotante(this.dataset.servicioId, this.dataset.nombre)">💬 Chat</button>
+                      </div>
+                      <div th:case="'EN_CAMINO'">
+                        <form th:action="@{/servicios/{id}/iniciar(id=${s.idServicio})}" method="post" style="display:inline">
+                          <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                          <button type="submit" class="px-2 py-1 rounded text-white text-xs font-medium" style="background-color:var(--primary);">Iniciar servicio</button>
+                        </form>
+                        <form th:action="@{/servicios/{id}/cancelar(id=${s.idServicio})}" method="post" style="display:inline">
+                          <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                          <button type="submit" class="px-2 py-1 rounded text-white text-xs font-medium" style="background-color:#dc2626;">Cancelar</button>
+                        </form>
+                        <br />
+                        <button type="button" class="px-2 py-1 rounded text-xs font-medium border chat-trigger"
+                          style="margin-top:4px; border-color: var(--border);"
+                          th:attr="data-servicio-id=${s.idServicio}"
+                          th:data-nombre="${s.cliente != null ? s.cliente.nombres + (s.cliente.apellidoPaterno != null ? ' ' + s.cliente.apellidoPaterno : '') : 'Cliente'}"
+                          onclick="abrirChatFlotante(this.dataset.servicioId, this.dataset.nombre)">💬 Chat</button>
                       </div>
                       <div th:case="'EN_PROCESO'">
                         <form

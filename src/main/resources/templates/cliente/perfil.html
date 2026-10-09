@@ -64,6 +64,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
         <a href="/" class="text-2xl font-medium text-primary">HogarFix</a>
         <div class="flex items-center space-x-3">
+          <div th:replace="~{fragments/notificaciones :: campana}"></div>
           <form th:action="@{/logout}" method="post">
             <button type="submit" class="btn-outline btn-sm">Cerrar sesión</button>
           </form>
@@ -131,7 +132,7 @@
                 <td th:text="${s.categoria != null ? s.categoria.nombre : 'Sin categoría'}">Plomería</td>
                 <td th:text="${s.descripcion}">Descripción del servicio</td>
                 <td th:text="${s.urgencia != null ? s.urgencia : '-'}">media</td>
-                <td><span class="badge-soft" th:text="${s.estado}">PENDIENTE</span></td>
+                <td><span class="badge-soft" th:text="${#strings.replace(s.estado, '_', ' ')}">PENDIENTE</span></td>
                 <td>
                   <button type="button" class="btn-outline btn-sm"
                           th:attr="data-servicio-id=${s.idServicio}"
@@ -139,6 +140,12 @@
                           onclick="abrirChatFlotante(this.dataset.servicioId, this.dataset.nombre)">
                     💬 Chat
                   </button>
+                  <form th:action="@{/servicios/{id}/cancelar-cliente(id=${s.idServicio})}" method="post" style="display:inline"
+                        onsubmit="return confirm('¿Seguro que quieres cancelar esta solicitud?');">
+                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <button type="submit" class="btn-outline btn-sm" style="color:#dc2626; border-color:#dc2626;">Cancelar</button>
+                  </form>
+                  <button type="button" class="btn-outline btn-sm" th:onclick="|verHistorial(${s.idServicio})|">Historial</button>
                 </td>
               </tr>
             </tbody>
@@ -167,6 +174,17 @@
                       onclick="abrirChatFlotante(this.dataset.servicioId, this.dataset.nombre)">
                 💬 Chat
               </button>
+            </div>
+            <div th:replace="~{fragments/progreso-servicio :: progreso(${s.estado})}"></div>
+            <div class="flex gap-2 mt-2">
+              <button type="button" class="btn-outline btn-sm" th:onclick="|verHistorial(${s.idServicio})|">Historial</button>
+              <th:block th:if="${s.estado == 'ACEPTADO' or s.estado == 'EN_CAMINO'}">
+                <form th:action="@{/servicios/{id}/cancelar-cliente(id=${s.idServicio})}" method="post" style="display:inline"
+                        onsubmit="return confirm('¿Seguro que quieres cancelar esta solicitud?');">
+                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <button type="submit" class="btn-outline btn-sm" style="color:#dc2626; border-color:#dc2626;">Cancelar</button>
+                  </form>
+              </th:block>
             </div>
           </div>
         </div>

@@ -112,7 +112,7 @@ public class ServicioController {
         s.setEstado("PENDIENTE");
         s.setFechaSolicitud(LocalDateTime.now());
 
-        servicioService.registrarServicio(s);
+        servicioService.registrarSolicitudNueva(s);
 
         // Notificar al técnico (si ya quedó asignado) que le llegó una nueva solicitud
         try {
@@ -154,8 +154,87 @@ public class ServicioController {
             return "redirect:/tecnicos/panel?error=forbidden";
         }
 
-        servicioServiceInternal.marcarEnProgreso(id);
+        try {
+            servicioServiceInternal.marcarAceptado(id);
+        } catch (IllegalStateException ex) {
+            return "redirect:/tecnicos/panel?error=transicion";
+        }
         return "redirect:/tecnicos/panel";
+    }
+
+    /** Verifica que quien llama es el técnico asignado al servicio. */
+    private boolean esTecnicoAsignado(Servicio s, Principal principal) {
+        if (principal == null || s.getTecnico() == null) return false;
+        try {
+            var tecnico = tecnicoService.obtenerPorEmail(principal.getName());
+            return tecnico != null && tecnico.getIdTecnico().equals(s.getTecnico().getIdTecnico());
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+
+    @PostMapping("/{id}/en-camino")
+    public String enCamino(@PathVariable("id") Long id, Principal principal) {
+        if (principal == null) return "redirect:/auth/login";
+        var servOpt = servicioService.buscarPorId(id);
+        if (servOpt.isEmpty()) return "redirect:/tecnicos/panel?error=notfound";
+        if (!esTecnicoAsignado(servOpt.get(), principal)) return "redirect:/tecnicos/panel?error=forbidden";
+        try {
+            servicioServiceInternal.marcarEnCamino(id);
+        } catch (IllegalStateException ex) {
+            return "redirect:/tecnicos/panel?error=transicion";
+        }
+        return "redirect:/tecnicos/panel";
+    }
+
+    @PostMapping("/{id}/iniciar")
+    public String iniciar(@PathVariable("id") Long id, Principal principal) {
+        if (principal == null) return "redirect:/auth/login";
+        var servOpt = servicioService.buscarPorId(id);
+        if (servOpt.isEmpty()) return "redirect:/tecnicos/panel?error=notfound";
+        if (!esTecnicoAsignado(servOpt.get(), principal)) return "redirect:/tecnicos/panel?error=forbidden";
+        try {
+            servicioServiceInternal.marcarEnProgreso(id);
+        } catch (IllegalStateException ex) {
+            return "redirect:/tecnicos/panel?error=transicion";
+        }
+        return "redirect:/tecnicos/panel";
+    }
+
+    /** El cliente cancela su propia solicitud (mientras el servicio no haya empezado). */
+    @PostMapping("/{id}/cancelar-cliente")
+    public String cancelarPorCliente(@PathVariable("id") Long id, Principal principal) {
+        if (principal == null) return "redirect:/auth/login";
+        var servOpt = servicioService.buscarPorId(id);
+        if (servOpt.isEmpty()) return "redirect:/clientes/perfil?error=notfound";
+        var s = servOpt.get();
+        boolean esDueno = s.getCliente() != null && s.getCliente().getUsuario() != null
+                && principal.getName().equalsIgnoreCase(s.getCliente().getUsuario().getEmail());
+        if (!esDueno) return "redirect:/clientes/perfil?error=forbidden";
+        try {
+            servicioServiceInternal.cambiarEstado(id, "CANCELADO",
+                    com.hogarfix.service.ServicioService.ACTOR_CLIENTE, "Cancelado por el cliente");
+        } catch (IllegalStateException ex) {
+            return "redirect:/clientes/perfil?error=transicion";
+        }
+        return "redirect:/clientes/perfil";
+    }
+
+    /** Historial de estados (JSON) visible solo para el cliente y el técnico del servicio. */
+    @GetMapping("/{id}/historial")
+    @ResponseBody
+    public org.springframework.http.ResponseEntity<?> historial(@PathVariable("id") Long id, Principal principal) {
+        if (principal == null) return org.springframework.http.ResponseEntity.status(401).build();
+        var servOpt = servicioService.buscarPorId(id);
+        if (servOpt.isEmpty()) return org.springframework.http.ResponseEntity.notFound().build();
+        var s = servOpt.get();
+        String login = principal.getName();
+        boolean esCliente = s.getCliente() != null && s.getCliente().getUsuario() != null
+                && login.equalsIgnoreCase(s.getCliente().getUsuario().getEmail());
+        boolean esTecnico = s.getTecnico() != null && s.getTecnico().getUsuario() != null
+                && login.equalsIgnoreCase(s.getTecnico().getUsuario().getEmail());
+        if (!esCliente && !esTecnico) return org.springframework.http.ResponseEntity.status(403).build();
+        return org.springframework.http.ResponseEntity.ok(servicioServiceInternal.historial(id));
     }
 
     @PostMapping("/{id}/cancelar")
@@ -175,7 +254,11 @@ public class ServicioController {
             return "redirect:/tecnicos/panel?error=forbidden";
         }
 
-        servicioServiceInternal.marcarCancelado(id);
+        try {
+            servicioServiceInternal.marcarCancelado(id);
+        } catch (IllegalStateException ex) {
+            return "redirect:/tecnicos/panel?error=transicion";
+        }
 
         // Notificar al cliente que su solicitud fue rechazada
         try {
@@ -212,7 +295,12 @@ public class ServicioController {
             return "redirect:/tecnicos/panel?error=forbidden";
         }
 
-        var updatedOpt = servicioServiceInternal.marcarFinalizado(id);
+        java.util.Optional<Servicio> updatedOpt;
+        try {
+            updatedOpt = servicioServiceInternal.marcarFinalizado(id);
+        } catch (IllegalStateException ex) {
+            return "redirect:/tecnicos/panel?error=transicion";
+        }
         if (updatedOpt.isPresent()) {
             var updated = updatedOpt.get();
             try {

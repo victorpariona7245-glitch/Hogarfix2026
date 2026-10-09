@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <body>
+    <!-- Barra de progreso del servicio: <div th:replace="~{fragments/progreso-servicio :: progreso(${s.estado})}"> -->
+    <div th:fragment="progreso(estado)"
+         th:with="pasos=${ {'ACEPTADO','EN_CAMINO','EN_PROCESO','FINALIZADO'} },
+                  etiquetas=${ {'Aceptado','En camino','En curso','Finalizado'} },
+                  actual=${ {'ACEPTADO','EN_CAMINO','EN_PROCESO','FINALIZADO'}.indexOf(estado) }"
+         style="display:flex; gap:4px; margin:8px 0;">
+      <div th:each="p, it : ${pasos}" style="flex:1; text-align:center;">
+        <div th:style="${it.index <= actual} ? 'height:6px;border-radius:4px;background:var(--primary);' : 'height:6px;border-radius:4px;background:#e5e7eb;'"></div>
+        <div th:text="${etiquetas[it.index]}"
+             th:style="${it.index <= actual} ? 'font-size:11px;margin-top:3px;font-weight:600;' : 'font-size:11px;margin-top:3px;color:#9ca3af;'">Paso</div>
+      </div>
+    </div>
+  </body>
+</html>

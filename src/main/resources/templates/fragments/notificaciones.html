@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <body>
+    <!-- Campanita de notificaciones + modal de historial de solicitud -->
+    <div
+      th:fragment="campana"
+      id="campana"
+      style="position: relative; display: inline-block"
+      th:attr="data-token=${_csrf != null ? _csrf.token : ''},data-header=${_csrf != null ? _csrf.headerName : 'X-CSRF-TOKEN'}"
+    >
+      <button
+        type="button"
+        id="campana-btn"
+        aria-label="Notificaciones"
+        style="position: relative; background: none; border: 1px solid var(--border); border-radius: 9999px; width: 40px; height: 40px; cursor: pointer; font-size: 18px; line-height: 1;"
+      >
+        🔔
+        <span
+          id="campana-badge"
+          style="display: none; position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9999px; background: #dc2626; color: #fff; font-size: 11px; font-weight: 600; line-height: 18px; text-align: center;"
+          >0</span
+        >
+      </button>
+
+      <div
+        id="campana-panel"
+        style="display: none; position: absolute; right: 0; top: 48px; width: 320px; max-width: 88vw; background: #fff; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.15); z-index: 100;"
+      >
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border);">
+          <strong style="font-size: 14px;">Notificaciones</strong>
+          <button type="button" id="campana-todas" style="background: none; border: none; color: var(--primary); font-size: 12px; cursor: pointer;">
+            Marcar todas como leídas
+          </button>
+        </div>
+        <div id="campana-lista" style="max-height: 360px; overflow-y: auto;">
+          <p style="padding: 16px; font-size: 13px; color: var(--muted-foreground);">Cargando...</p>
+        </div>
+      </div>
+
+      <!-- Modal de historial -->
+      <div
+        id="historial-modal"
+        style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; align-items: center; justify-content: center; padding: 16px;"
+      >
+        <div style="background: #fff; border-radius: 14px; max-width: 420px; width: 100%; max-height: 80vh; overflow-y: auto; padding: 20px; text-align: left; white-space: normal;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <strong>Historial de la solicitud</strong>
+            <button type="button" id="historial-cerrar" style="background: none; border: none; font-size: 20px; cursor: pointer;">×</button>
+          </div>
+          <div id="historial-contenido" style="font-size: 14px;"></div>
+        </div>
+      </div>
+
+      <script>
+        (function () {
+          var root = document.getElementById("campana");
+          if (!root) return;
+          var token = root.dataset.token, header = root.dataset.header;
+          var btn = document.getElementById("campana-btn");
+          var badge = document.getElementById("campana-badge");
+          var panel = document.getElementById("campana-panel");
+          var lista = document.getElementById("campana-lista");
+
+          function post(url) {
+            var h = {};
+            if (token) h[header] = token;
+            return fetch(url, { method: "POST", headers: h, credentials: "same-origin" });
+          }
+
+          function pintar(data) {
+            var n = data.noLeidas || 0;
+            badge.style.display = n > 0 ? "inline-block" : "none";
+            badge.textContent = n > 9 ? "9+" : n;
+            lista.innerHTML = "";
+            if (!data.items || !data.items.length) {
+              var vacio = document.createElement("p");
+              vacio.style.cssText = "padding:16px;font-size:13px;color:var(--muted-foreground);";
+              vacio.textContent = "No tienes notificaciones.";
+              lista.appendChild(vacio);
+              return;
+            }
+            data.items.forEach(function (it) {
+              var row = document.createElement("div");
+              row.style.cssText = "padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px;" +
+                (it.leida ? "" : "background:#eff6ff;");
+              var msg = document.createElement("div");
+              msg.textContent = it.mensaje;
+              if (!it.leida) msg.style.fontWeight = "600";
+              var fecha = document.createElement("div");
+              fecha.textContent = it.fecha;
+              fecha.style.cssText = "font-size:11px;color:var(--muted-foreground);margin-top:2px;";
+              row.appendChild(msg);
+              row.appendChild(fecha);
+              row.addEventListener("click", function () {
+                post("/notificaciones/" + it.id + "/leer").finally(function () {
+                  if (it.enlace && it.enlace !== window.location.pathname) {
+                    window.location.href = it.enlace;
+                  } else {
+                    cargar();
+                  }
+                });
+              });
+              lista.appendChild(row);
+            });
+          }
+
+          function cargar() {
+            if (document.hidden) return;
+            fetch("/notificaciones", { credentials: "same-origin" })
+              .then(function (r) { return r.ok ? r.json() : null; })
+              .then(function (d) { if (d) pintar(d); })
+              .catch(function () {});
+          }
+
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            panel.style.display = panel.style.display === "block" ? "none" : "block";
+            if (panel.style.display === "block") cargar();
+          });
+          document.addEventListener("click", function (e) {
+            if (!root.contains(e.target)) panel.style.display = "none";
+          });
+          document.getElementById("campana-todas").addEventListener("click", function () {
+            post("/notificaciones/leer-todas").finally(cargar);
+          });
+
+          cargar();
+          setInterval(cargar, 30000);
+
+          // ---- Historial de una solicitud ----
+          var modal = document.getElementById("historial-modal");
+          var cont = document.getElementById("historial-contenido");
+          var ETIQ = {
+            PENDIENTE: "Solicitud enviada", ACEPTADO: "Aceptada", EN_CAMINO: "Técnico en camino",
+            EN_PROCESO: "Servicio en curso", FINALIZADO: "Finalizado", CANCELADO: "Cancelado"
+          };
+          document.getElementById("historial-cerrar").addEventListener("click", function () { modal.style.display = "none"; });
+          modal.addEventListener("click", function (e) { if (e.target === modal) modal.style.display = "none"; });
+
+          window.verHistorial = function (idServicio) {
+            cont.textContent = "Cargando...";
+            modal.style.display = "flex";
+            fetch("/servicios/" + idServicio + "/historial", { credentials: "same-origin" })
+              .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+              .then(function (items) {
+                cont.innerHTML = "";
+                items.forEach(function (h) {
+                  var fila = document.createElement("div");
+                  fila.style.cssText = "padding:8px 0 8px 14px;border-left:3px solid var(--primary);margin-left:6px;position:relative;";
+                  var t = document.createElement("div");
+                  t.style.fontWeight = "600";
+                  t.textContent = ETIQ[h.estado] || h.estado;
+                  var d = document.createElement("div");
+                  d.style.cssText = "font-size:12px;color:var(--muted-foreground);";
+                  d.textContent = h.fecha + (h.detalle ? " · " + h.detalle : "");
+                  fila.appendChild(t);
+                  fila.appendChild(d);
+                  cont.appendChild(fila);
+                });
+              })
+              .catch(function () { cont.textContent = "No se pudo cargar el historial."; });
+          };
+        })();
+      </script>
+    </div>
+  </body>
+</html>
