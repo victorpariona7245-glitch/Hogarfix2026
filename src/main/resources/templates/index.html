@@ -221,7 +221,15 @@
           <a href="#contacto" class="block hover:text-primary transition-colors"
             >Contacto</a
           >
-          
+          <div th:if="${session.usuarioActual == null}" class="pt-2 border-t" style="border-color: var(--border)">
+            <a th:href="@{/auth/login}" class="btn-primary block text-center">Iniciar Sesión</a>
+          </div>
+          <div th:if="${session.usuarioActual != null}" class="pt-2 border-t space-y-3" style="border-color: var(--border)">
+            <a th:href="@{/auth/redirect}" class="block hover:text-primary transition-colors">Mi perfil</a>
+            <form th:action="@{/logout}" method="post">
+              <button type="submit" class="block w-full text-left hover:text-primary transition-colors">Cerrar sesión</button>
+            </form>
+          </div>
         </nav>
       </div>
     </header>

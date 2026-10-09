@@ -2,9 +2,11 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
   <head th:replace="~{fragments/head :: head('Registro Cliente')}"></head>
   <body class="auth-gradient min-h-screen">
-    <header th:replace="~{fragments/navbar :: navbar}"></header>
+    <div class="w-full max-w-3xl mx-auto px-4 pt-10">
+      <a th:href="@{/}" class="text-sm hover:text-primary transition-colors" style="color: var(--muted-foreground);">← Volver al inicio</a>
+    </div>
 
-    <div class="container mx-auto max-w-3xl px-4 py-12">
+    <div class="container mx-auto max-w-3xl px-4 py-8">
       <div class="text-center mb-8">
         <h2 class="text-3xl font-medium mb-2">Registro de Cliente</h2>
         <p class="text-sm" style="color: var(--muted-foreground);">Crea tu cuenta para solicitar técnicos de confianza</p>
