@@ -12,6 +12,7 @@ import java.util.Optional;
 @Repository
 public interface PagoRepository extends JpaRepository<Pago, Long> {
     Optional<Pago> findByServicio(Servicio servicio);
+    Optional<Pago> findByServicio_IdServicio(Long idServicio);
     java.util.List<Pago> findByCliente(com.hogarfix.model.Cliente cliente);
 
     boolean existsByCodigoOperacionAndIdPagoNot(String codigoOperacion, Long idPago);

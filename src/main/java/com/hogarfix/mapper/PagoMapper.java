@@ -33,6 +33,7 @@ public class PagoMapper {
             if (s.getTecnico() != null) {
                 var t = s.getTecnico();
                 builder.tecnicoNombres(t.getNombres())
+                        .tecnicoTelefono(t.getTelefono())
                         .tecnicoApellidoPaterno(t.getApellidoPaterno())
                         .tecnicoApellidoMaterno(t.getApellidoMaterno());
             }

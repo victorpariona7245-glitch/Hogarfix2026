@@ -27,14 +27,6 @@ public class VistaPagoController {
     private final ClienteService clienteService;
     private static final Logger logger = LoggerFactory.getLogger(VistaPagoController.class);
 
-    // Datos para recibir pagos por Yape/Plin (se configuran en Railway, nunca en el código)
-    @org.springframework.beans.factory.annotation.Value("${YAPE_NUMERO:}")
-    private String yapeNumero;
-    @org.springframework.beans.factory.annotation.Value("${YAPE_TITULAR:}")
-    private String yapeTitular;
-    @org.springframework.beans.factory.annotation.Value("${YAPE_QR_URL:}")
-    private String yapeQrUrl;
-
     @GetMapping("/pagos")
     public String verPagos(Principal principal, HttpSession session, Model model, @org.springframework.web.bind.annotation.RequestParam(value = "pagoId", required = false) Long pagoId, jakarta.servlet.http.HttpServletRequest request) {
         Cliente cliente = null;
@@ -85,10 +77,6 @@ public class VistaPagoController {
         }
         model.addAttribute("pagos", pagosDto);
         model.addAttribute("cliente", cliente);
-        model.addAttribute("yapeConfigurado", yapeNumero != null && !yapeNumero.isBlank());
-        model.addAttribute("yapeNumero", yapeNumero);
-        model.addAttribute("yapeTitular", yapeTitular);
-        model.addAttribute("yapeQrUrl", yapeQrUrl);
         // Exponer token CSRF para llamadas fetch desde JS
         Object csrf = request.getAttribute("_csrf");
         if (csrf != null) model.addAttribute("_csrf", csrf);
@@ -158,5 +146,34 @@ public class VistaPagoController {
             redirectAttributes.addFlashAttribute("mensajeError", ex.getMessage());
         }
         return new RedirectView("/pagos?pagoId=" + id);
+    }
+
+    /** El técnico confirma que el Yape/Plin del cliente le llegó. */
+    @PostMapping("/pagos/servicio/{idServicio}/confirmar-tecnico")
+    public RedirectView confirmarPorTecnico(@PathVariable("idServicio") Long idServicio, Principal principal,
+            RedirectAttributes redirectAttributes) {
+        if (principal == null) return new RedirectView("/auth/login");
+        try {
+            pagoService.aprobarPorTecnico(idServicio, principal.getName());
+            redirectAttributes.addFlashAttribute("mensajeExito", "Pago confirmado. ¡Gracias!");
+        } catch (IllegalStateException ex) {
+            redirectAttributes.addFlashAttribute("mensajeError", ex.getMessage());
+        }
+        return new RedirectView("/tecnicos/panel");
+    }
+
+    /** El técnico indica que el Yape/Plin no le llegó. */
+    @PostMapping("/pagos/servicio/{idServicio}/rechazar-tecnico")
+    public RedirectView rechazarPorTecnico(@PathVariable("idServicio") Long idServicio, Principal principal,
+            RedirectAttributes redirectAttributes) {
+        if (principal == null) return new RedirectView("/auth/login");
+        try {
+            pagoService.rechazarPorTecnico(idServicio, principal.getName(),
+                    "El técnico no recibió el pago con ese número de operación");
+            redirectAttributes.addFlashAttribute("mensajeExito", "Avisamos al cliente que el pago no llegó.");
+        } catch (IllegalStateException ex) {
+            redirectAttributes.addFlashAttribute("mensajeError", ex.getMessage());
+        }
+        return new RedirectView("/tecnicos/panel");
     }
 }

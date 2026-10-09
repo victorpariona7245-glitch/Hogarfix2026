@@ -31,6 +31,7 @@ public class PagoDTO {
     private String servicioDescripcion;
     private String categoriaNombre;
     private String tecnicoNombres;
+    private String tecnicoTelefono;
     private String tecnicoApellidoPaterno;
     private String tecnicoApellidoMaterno;
     private LocalDateTime servicioFechaFinalizacion;

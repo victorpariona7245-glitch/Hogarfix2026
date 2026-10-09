@@ -78,7 +78,7 @@
 
           <!-- Comprobante Yape/Plin en revisión -->
           <div th:if="${pago != null and pago.estado == 'EN_REVISION'}" class="p-4 rounded-md text-sm" style="background:#dbeafe; color:#1e40af;">
-            Recibimos tu comprobante y lo estamos verificando. Apenas lo confirmemos te avisaremos con una notificación 🔔.
+            Avisamos a tu técnico. Cuando confirme que le llegó el dinero, te avisaremos con una notificación 🔔.
           </div>
 
           <!-- Rechazado por el admin: el cliente puede volver a intentar -->
@@ -95,18 +95,17 @@
               <button type="button" class="metodo-btn px-3 py-2 rounded-md border border-slate-200 bg-white text-sm" data-metodo="efectivo">💵 Efectivo</button>
             </div>
 
-            <!-- Yape / Plin -->
+            <!-- Yape / Plin: va directo al técnico -->
             <div class="metodo-panel" data-panel="yape" style="display:none;">
-              <div th:if="${!yapeConfigurado}" class="p-4 rounded-md text-sm" style="background:#fef3c7; color:#92400e;">
-                Yape/Plin todavía no está disponible. Elige otro método o contacta al administrador.
+              <div th:if="${pago.tecnicoTelefono == null or pago.tecnicoTelefono.isBlank()}" class="p-4 rounded-md text-sm" style="background:#fef3c7; color:#92400e;">
+                Este técnico no tiene un número registrado para Yape/Plin. Paga en efectivo o contacta al administrador.
               </div>
-              <div th:if="${yapeConfigurado}" class="space-y-3 text-sm">
+              <div th:if="${pago.tecnicoTelefono != null and !pago.tecnicoTelefono.isBlank()}" class="space-y-3 text-sm">
                 <div class="p-4 rounded-md" style="background:#f3e8ff; color:#581c87;">
-                  <p>1. Yapea o Plinea <strong th:text="${'S/ ' + pago.monto}">S/ 0.00</strong> al número:</p>
-                  <p class="text-xl font-bold my-1" th:text="${yapeNumero}">999 999 999</p>
-                  <p th:if="${yapeTitular != null and !yapeTitular.isBlank()}">a nombre de <strong th:text="${yapeTitular}">Titular</strong></p>
-                  <img th:if="${yapeQrUrl != null and !yapeQrUrl.isBlank()}" th:src="${yapeQrUrl}" alt="QR de pago"
-                       style="max-width:180px; margin-top:8px; border-radius:8px;" />
+                  <p>1. Yapea o Plinea <strong th:text="${'S/ ' + pago.monto}">S/ 0.00</strong> a tu técnico
+                    <strong th:text="${pago.tecnicoNombres + ' ' + pago.tecnicoApellidoPaterno}">Técnico</strong>:</p>
+                  <p class="text-xl font-bold my-1" th:text="${pago.tecnicoTelefono}">999 999 999</p>
+                  <p class="text-xs">Antes de enviar, comprueba que el nombre que te muestra Yape/Plin sea el de tu técnico.</p>
                 </div>
                 <form th:action="@{/pagos/{id}/reportar-manual(id=${pago.idPago})}" method="post" class="space-y-3">
                   <p>2. Escribe el número de operación que te salió en el comprobante:</p>
@@ -118,8 +117,8 @@
                     <input type="text" name="codigo" required minlength="4" maxlength="30" pattern="[A-Za-z0-9\-]{4,30}"
                            placeholder="N° de operación" class="flex-1 p-2 rounded-md border border-slate-200" style="min-width:160px;" />
                   </div>
-                  <button type="submit" class="btn-primary" style="background-color:#7c3aed;">Ya pagué, enviar comprobante</button>
-                  <p class="text-xs text-slate-400">Un administrador verificará que el dinero llegó antes de confirmar tu pago.</p>
+                  <button type="submit" class="btn-primary" style="background-color:#7c3aed;">Ya pagué, avisar al técnico</button>
+                  <p class="text-xs text-slate-400">Tu técnico confirmará que el dinero le llegó para cerrar el pago.</p>
                 </form>
               </div>
             </div>

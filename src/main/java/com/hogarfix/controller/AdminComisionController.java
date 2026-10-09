@@ -54,8 +54,9 @@ public class AdminComisionController {
         List<FilaCobro> enRevision = new ArrayList<>();
         BigDecimal totalCobrado = BigDecimal.ZERO;
         BigDecimal totalComision = BigDecimal.ZERO;
-        BigDecimal porTransferir = BigDecimal.ZERO;
-        BigDecimal porCobrarEfectivo = BigDecimal.ZERO;
+        BigDecimal comisionPorCobrar = BigDecimal.ZERO;
+        BigDecimal comisionCobrada = BigDecimal.ZERO;
+        java.util.Map<String, BigDecimal> pendientePorTecnico = new java.util.TreeMap<>();
 
         for (Pago p : pagos) {
             BigDecimal monto = p.getMonto() == null ? BigDecimal.ZERO : p.getMonto();
@@ -80,9 +81,12 @@ public class AdminComisionController {
             if ("PAGADO".equalsIgnoreCase(p.getEstado())) {
                 totalCobrado = totalCobrado.add(monto);
                 totalComision = totalComision.add(comision);
-                if (!liquidado) {
-                    if (efectivo) porCobrarEfectivo = porCobrarEfectivo.add(comision);
-                    else porTransferir = porTransferir.add(neto);
+                // Todo el dinero va directo al técnico: él le debe la comisión a HogarFix
+                if (liquidado) {
+                    comisionCobrada = comisionCobrada.add(comision);
+                } else {
+                    comisionPorCobrar = comisionPorCobrar.add(comision);
+                    pendientePorTecnico.merge(tecnico, comision, BigDecimal::add);
                 }
             }
         }
@@ -91,8 +95,9 @@ public class AdminComisionController {
         model.addAttribute("enRevision", enRevision);
         model.addAttribute("totalCobrado", totalCobrado);
         model.addAttribute("totalComision", totalComision);
-        model.addAttribute("porTransferir", porTransferir);
-        model.addAttribute("porCobrarEfectivo", porCobrarEfectivo);
+        model.addAttribute("comisionPorCobrar", comisionPorCobrar);
+        model.addAttribute("comisionCobrada", comisionCobrada);
+        model.addAttribute("pendientePorTecnico", pendientePorTecnico);
         model.addAttribute("porcentaje", pagoService.getPorcentajeComision());
         return "admin/comisiones";
     }
@@ -132,9 +137,9 @@ public class AdminComisionController {
         if (principal == null) return "redirect:/auth/login";
         try {
             Pago p = pagoService.marcarLiquidado(id);
-            auditoriaService.registrar(principal.getName(), "Liquidó pago",
+            auditoriaService.registrar(principal.getName(), "Cobró comisión",
                     "Pago #" + id + " (" + p.getMetodoPago() + ")");
-            ra.addFlashAttribute("mensajeExito", "Pago #" + id + " marcado como liquidado.");
+            ra.addFlashAttribute("mensajeExito", "Pago #" + id + " marcado: comisión cobrada.");
         } catch (IllegalStateException ex) {
             ra.addFlashAttribute("mensajeError", ex.getMessage());
         }
