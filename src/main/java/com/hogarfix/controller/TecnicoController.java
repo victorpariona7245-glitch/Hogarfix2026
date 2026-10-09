@@ -82,9 +82,10 @@ public class TecnicoController {
         return "tecnico/lista";
     }
 
+    // El inicio de sesión es uno solo (/auth/login). Esta ruta se deja solo para enlaces viejos.
     @GetMapping("/login")
     public String mostrarLoginTecnico() {
-        return "tecnico/logintecnico";
+        return "redirect:/auth/login";
     }
 
     @GetMapping("/registro")
@@ -249,74 +250,6 @@ public class TecnicoController {
             model.addAttribute("ciudades", ciudadService.listarCiudades());
             model.addAttribute("categorias", categoriaService.listarCategorias());
             return "tecnico/registrotec";
-        }
-    }
-
-    @PostMapping("/login")
-    public String procesarLoginTecnico(@RequestParam("username") String username,
-            @RequestParam("password") String password,
-            HttpServletRequest request,
-            HttpSession session) {
-        String claveIntento = LoginAttemptService.clave(username, request.getRemoteAddr());
-        if (loginAttemptService.estaBloqueado(claveIntento)) {
-            log.warn("Login de técnico bloqueado por demasiados intentos: username={}", username);
-            return "redirect:/tecnicos/login?error=bloqueado";
-        }
-        try {
-            log.info("Intento de login técnico: username={}", username);
-            UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(username, password);
-            Authentication auth = authenticationManager.authenticate(token);
-            loginAttemptService.registrarExito(claveIntento);
-            // Cambiar el id de sesión al autenticar evita la fijación de sesión
-            request.changeSessionId();
-            SecurityContextHolder.getContext().setAuthentication(auth);
-            // Persistir el SecurityContext en la sesión para que Spring Security
-            // lo reconozca en las siguientes requests (consistente con AuthController)
-            session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
-            log.info("Autenticación exitosa para usuario={}", username);
-
-            // verificar rol TECNICO
-            var usuarioOpt = usuarioService
-                    .buscarPorId(((com.hogarfix.model.Usuario) auth.getPrincipal()).getIdUsuario());
-            if (usuarioOpt.isPresent()) {
-                Usuario u = usuarioOpt.get();
-                if (u.getRol() != null && u.getRol().getTipoRol() == com.hogarfix.model.enums.TipoRol.TECNICO) {
-                    session.setAttribute("usuarioActual", u);
-                    // Guardar nombre para mostrar en la navbar
-                    try {
-                        Tecnico t = tecnicoService.obtenerPorEmail(u.getEmail());
-                        if (t != null) {
-                            session.setAttribute("usuarioNombre", t.getNombres() + " " + t.getApellidoPaterno());
-                        } else {
-                            session.setAttribute("usuarioNombre", u.getEmail());
-                        }
-                    } catch (Exception ex) {
-                        session.setAttribute("usuarioNombre", u.getEmail());
-                    }
-                    // Redirigir al panel del técnico (mostrar nombre en navbar)
-                    return "redirect:/tecnicos/panel";
-                } else {
-                    // si no es técnico, cerrar sesión y devolver error
-                    SecurityContextHolder.clearContext();
-                    return "redirect:/tecnicos/login?error";
-                }
-            }
-
-            return "redirect:/tecnicos/login?error";
-        } catch (org.springframework.security.authentication.LockedException ex) {
-            log.warn("Intento de login de un técnico con cuenta suspendida: username={}", username);
-            return "redirect:/tecnicos/login?error=suspendida";
-        } catch (org.springframework.security.authentication.DisabledException ex) {
-            // La contraseña fue correcta pero la cuenta aún no está aprobada: no cuenta como intento fallido
-            log.warn("Intento de login de técnico con cuenta pendiente de aprobación: username={}", username);
-            return "redirect:/tecnicos/login?error=pendiente";
-        } catch (AuthenticationException ex) {
-            loginAttemptService.registrarFallo(claveIntento);
-            log.warn("Fallo de autenticación para usuario={}: {}", username, ex.getMessage());
-            return "redirect:/tecnicos/login?error";
-        } catch (Exception ex) {
-            log.error("Error inesperado en procesarLoginTecnico para usuario={}", username, ex);
-            return "redirect:/tecnicos/login?error=server";
         }
     }
 

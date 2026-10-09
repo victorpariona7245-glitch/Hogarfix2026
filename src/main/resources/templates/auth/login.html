@@ -51,10 +51,13 @@
           <div th:if="${param.error != null and param.error[0] == 'bloqueado'}" class="p-3 mb-4 text-sm rounded-lg" style="background-color:#fef3c7; color:#92400e;">
             Demasiados intentos fallidos. Espera 15 minutos antes de volver a intentarlo.
           </div>
+          <div th:if="${param.error != null and param.error[0] == 'pendiente'}" class="p-3 mb-4 text-sm rounded-lg" style="background-color:#fef3c7; color:#92400e;">
+            Tu cuenta está en revisión. Verificaremos tu certificado profesional (hasta 24 horas) y te avisaremos por correo cuando puedas iniciar sesión.
+          </div>
           <div th:if="${param.error != null and param.error[0] == 'suspendida'}" class="p-3 mb-4 text-sm rounded-lg" style="background-color:#fee2e2; color:#991b1b;">
             Tu cuenta está suspendida. Comunícate con el administrador de HogarFix.
           </div>
-          <div th:if="${param.error != null and param.error[0] != 'bloqueado' and param.error[0] != 'suspendida'}" class="p-3 mb-4 text-sm rounded-lg" style="background-color:#fee2e2; color:#991b1b;">
+          <div th:if="${param.error != null and param.error[0] != 'bloqueado' and param.error[0] != 'suspendida' and param.error[0] != 'pendiente'}" class="p-3 mb-4 text-sm rounded-lg" style="background-color:#fee2e2; color:#991b1b;">
             Credenciales inválidas. Por favor, inténtalo de nuevo.
           </div>
           <div th:if="${param.restablecida}" class="p-3 mb-4 text-sm rounded-lg" style="background-color:#dcfce7; color:#166534;">

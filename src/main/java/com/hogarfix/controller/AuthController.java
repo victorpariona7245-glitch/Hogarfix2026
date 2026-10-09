@@ -105,6 +105,10 @@ public class AuthController {
         } catch (org.springframework.security.authentication.LockedException ex) {
             logger.warn("Intento de login de una cuenta suspendida: usuario={}", username);
             return "redirect:/auth/login?error=suspendida";
+        } catch (org.springframework.security.authentication.DisabledException ex) {
+            // Contraseña correcta pero la cuenta aún no está habilitada (técnico en revisión)
+            logger.warn("Intento de login de una cuenta aún no habilitada: usuario={}", username);
+            return "redirect:/auth/login?error=pendiente";
         } catch (AuthenticationException ex) {
             loginAttemptService.registrarFallo(claveIntento);
             logger.warn("Fallo de autenticación: usuario={}, causa={}", username, ex.getMessage());
