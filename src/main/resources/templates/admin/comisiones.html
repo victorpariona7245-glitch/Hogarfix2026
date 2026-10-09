@@ -29,7 +29,13 @@
       </div>
 
       <!-- Qué técnico debe cuánto -->
-      <h3 class="text-lg font-medium mb-3">Comisión pendiente por técnico</h3>
+      <h3 class="text-lg font-medium mb-1">Comisión pendiente por técnico</h3>
+      <p class="text-xs mb-3" style="color:var(--muted-foreground);">
+        <span th:if="${diasGracia > 0}">Un técnico tiene <strong th:text="${diasGracia}">7</strong> días para entregar la comisión de cada pago.
+          Pasado ese plazo queda bloqueado y no puede aceptar solicitudes nuevas hasta que marques "Ya cobré la comisión".
+          Se cambia con la variable <code>COMISION_DIAS_GRACIA</code> (0 = sin bloqueo).</span>
+        <span th:if="${diasGracia == 0}">El bloqueo por comisión vencida está desactivado.</span>
+      </p>
       <div th:if="${#maps.isEmpty(pendientePorTecnico)}" class="card text-sm mb-8" style="color:var(--muted-foreground);">
         Ningún técnico te debe comisión por ahora.
       </div>
@@ -38,7 +44,11 @@
           <thead><tr><th>Técnico</th><th>Comisión que debe entregar</th></tr></thead>
           <tbody>
             <tr th:each="e : ${pendientePorTecnico}">
-              <td th:text="${e.key}">Técnico</td>
+              <td>
+                <span th:text="${e.key}">Técnico</span>
+                <span th:if="${bloqueados.contains(e.key)}" class="badge-soft"
+                      style="background:#fee2e2; color:#991b1b; margin-left:6px;">Bloqueado: no puede aceptar solicitudes</span>
+              </td>
               <td><strong th:text="${'S/ ' + #numbers.formatDecimal(e.value,1,2)}">S/ 0.00</strong></td>
             </tr>
           </tbody>

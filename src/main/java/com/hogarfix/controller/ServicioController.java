@@ -94,6 +94,13 @@ public class ServicioController {
         Categoria categoria = categoriaService.buscarPorId(idCategoria)
                 .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
 
+        // No se envían solicitudes a un técnico bloqueado por comisión vencida
+        if (idTecnico != null && pagoService.tecnicoBloqueadoPorComision(idTecnico)) {
+            model.addAttribute("mensajeError", "Este técnico no está recibiendo solicitudes por ahora. Elige otro técnico.");
+            model.addAttribute("categorias", categoriaService.listarCategorias());
+            return "index";
+        }
+
     Servicio s = new Servicio();
     s.setCliente(cliente);
     s.setMetodoPagoPreferido("efectivo".equalsIgnoreCase(metodoPago) ? "efectivo" : "yape");
@@ -152,6 +159,11 @@ public class ServicioController {
             }
         } catch (Exception ex) {
             return "redirect:/tecnicos/panel?error=forbidden";
+        }
+
+        // Con comisión vencida sin entregar, el técnico no puede aceptar solicitudes nuevas
+        if (pagoService.tecnicoBloqueadoPorComision(s.getTecnico().getIdTecnico())) {
+            return "redirect:/tecnicos/panel?error=comision";
         }
 
         try {

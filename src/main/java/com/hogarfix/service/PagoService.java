@@ -28,6 +28,59 @@ public class PagoService {
     @Value("${COMISION_PORCENTAJE:10}")
     private BigDecimal porcentajeComision;
 
+    /**
+     * Días que tiene un técnico para entregar la comisión de un pago ya cobrado. Pasado ese plazo no puede
+     * aceptar solicitudes nuevas hasta ponerse al día. Variable COMISION_DIAS_GRACIA (0 = sin bloqueo).
+     */
+    @Value("${COMISION_DIAS_GRACIA:7}")
+    private int diasGracia;
+
+    public int getDiasGracia() {
+        return Math.max(0, diasGracia);
+    }
+
+    /** ¿Tiene el técnico comisiones vencidas sin entregar? (si es así, no puede recibir solicitudes nuevas) */
+    @Transactional(readOnly = true)
+    public boolean tecnicoBloqueadoPorComision(Long idTecnico) {
+        if (idTecnico == null || getDiasGracia() == 0) return false;
+        java.time.LocalDateTime limite = java.time.LocalDateTime.now().minusDays(getDiasGracia());
+        return pagoRepository.findComisionesPendientesDeTecnico(idTecnico).stream()
+                .anyMatch(p -> p.getFechaPago() != null && p.getFechaPago().isBefore(limite));
+    }
+
+    /** Recordatorio diario (9:00, hora de Lima) a técnicos con comisión pendiente o por vencer. */
+    @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 9 * * *", zone = "America/Lima")
+    @Transactional
+    public void recordarComisionesPendientes() {
+        int gracia = getDiasGracia();
+        if (gracia == 0) return;
+        java.util.Map<Long, java.util.List<Pago>> porTecnico = new java.util.HashMap<>();
+        for (Pago p : pagoRepository.findTodasComisionesPendientes()) {
+            porTecnico.computeIfAbsent(p.getServicio().getTecnico().getIdTecnico(), k -> new java.util.ArrayList<>())
+                    .add(p);
+        }
+        java.time.LocalDate hoy = java.time.LocalDate.now(java.time.ZoneId.of("America/Lima"));
+        for (var entrada : porTecnico.entrySet()) {
+            try {
+                var pagos = entrada.getValue();
+                var tecnico = pagos.get(0).getServicio().getTecnico();
+                BigDecimal total = pagos.stream().map(Pago::getComision).reduce(BigDecimal.ZERO, BigDecimal::add);
+                long dias = pagos.stream().filter(p -> p.getFechaPago() != null)
+                        .mapToLong(p -> java.time.temporal.ChronoUnit.DAYS.between(p.getFechaPago().toLocalDate(), hoy))
+                        .max().orElse(0);
+                if (dias < Math.max(1, gracia - 3) || tecnico.getUsuario() == null) continue;
+                String msg = dias >= gracia
+                        ? "Tienes S/ " + total + " de comisión vencida. Mientras no la entregues a HogarFix no puedes aceptar solicitudes nuevas"
+                        : "Tienes S/ " + total + " de comisión por entregar a HogarFix. Te quedan " + (gracia - dias)
+                                + " día(s) antes de que se bloqueen las solicitudes nuevas";
+                notificacionService.crearSiNoHayPendiente(tecnico.getUsuario(), "COMISION", msg,
+                        "/tecnicos/panel", tecnico.getIdTecnico());
+            } catch (Exception ex) {
+                log.warn("No se pudo recordar la comisión pendiente: {}", ex.getMessage());
+            }
+        }
+    }
+
     public BigDecimal getPorcentajeComision() {
         BigDecimal p = porcentajeComision == null ? BigDecimal.TEN : porcentajeComision;
         if (p.signum() < 0) p = BigDecimal.ZERO;

@@ -15,6 +15,15 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
     Optional<Pago> findByServicio_IdServicio(Long idServicio);
     java.util.List<Pago> findByCliente(com.hogarfix.model.Cliente cliente);
 
+    /** Pagos ya cobrados cuya comisión el técnico todavía no entregó a HogarFix (solo pagos con comisión fijada). */
+    @Query("SELECT p FROM Pago p JOIN FETCH p.servicio s WHERE s.tecnico.idTecnico = :idTecnico "
+            + "AND p.estado = 'PAGADO' AND p.comision IS NOT NULL AND (p.liquidado IS NULL OR p.liquidado = false)")
+    java.util.List<Pago> findComisionesPendientesDeTecnico(@Param("idTecnico") Long idTecnico);
+
+    @Query("SELECT p FROM Pago p JOIN FETCH p.servicio s JOIN FETCH s.tecnico t "
+            + "WHERE p.estado = 'PAGADO' AND p.comision IS NOT NULL AND (p.liquidado IS NULL OR p.liquidado = false)")
+    java.util.List<Pago> findTodasComisionesPendientes();
+
     boolean existsByCodigoOperacionAndIdPagoNot(String codigoOperacion, Long idPago);
 
     @Query("SELECT COALESCE(SUM(p.monto), 0) FROM Pago p " +

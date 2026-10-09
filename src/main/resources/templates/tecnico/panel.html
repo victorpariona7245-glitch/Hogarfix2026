@@ -87,6 +87,15 @@
       </div>
     </header>
 
+    <div th:if="${param.error != null}" class="max-w-7xl mx-auto px-6 pt-4">
+      <div class="p-3 text-sm rounded-lg" style="background:#fee2e2; color:#991b1b;">
+        <span th:if="${param.error[0] == 'comision'}">No puedes aceptar solicitudes nuevas porque tienes comisión vencida por entregar a HogarFix. Ponte al día con el administrador y se desbloqueará.</span>
+        <span th:if="${param.error[0] == 'monto'}">Ingresa un monto válido, entre S/ 10 y S/ 5000.</span>
+        <span th:if="${param.error[0] == 'transicion'}">Esa acción ya no es posible para esta solicitud.</span>
+        <span th:if="${param.error[0] != 'comision' and param.error[0] != 'monto' and param.error[0] != 'transicion'}">No se pudo completar la acción.</span>
+      </div>
+    </div>
+
     <main
       class="max-w-7xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6 mt-4"
     >

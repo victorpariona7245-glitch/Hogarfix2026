@@ -57,6 +57,8 @@ public class AdminComisionController {
         BigDecimal comisionPorCobrar = BigDecimal.ZERO;
         BigDecimal comisionCobrada = BigDecimal.ZERO;
         java.util.Map<String, BigDecimal> pendientePorTecnico = new java.util.TreeMap<>();
+        java.util.Set<String> bloqueados = new java.util.HashSet<>();
+        java.time.LocalDateTime limite = java.time.LocalDateTime.now().minusDays(pagoService.getDiasGracia());
 
         for (Pago p : pagos) {
             BigDecimal monto = p.getMonto() == null ? BigDecimal.ZERO : p.getMonto();
@@ -87,6 +89,10 @@ public class AdminComisionController {
                 } else {
                     comisionPorCobrar = comisionPorCobrar.add(comision);
                     pendientePorTecnico.merge(tecnico, comision, BigDecimal::add);
+                    if (pagoService.getDiasGracia() > 0 && p.getComision() != null && p.getFechaPago() != null
+                            && p.getFechaPago().isBefore(limite)) {
+                        bloqueados.add(tecnico);
+                    }
                 }
             }
         }
@@ -98,6 +104,8 @@ public class AdminComisionController {
         model.addAttribute("comisionPorCobrar", comisionPorCobrar);
         model.addAttribute("comisionCobrada", comisionCobrada);
         model.addAttribute("pendientePorTecnico", pendientePorTecnico);
+        model.addAttribute("bloqueados", bloqueados);
+        model.addAttribute("diasGracia", pagoService.getDiasGracia());
         model.addAttribute("porcentaje", pagoService.getPorcentajeComision());
         return "admin/comisiones";
     }
