@@ -6,10 +6,11 @@
   <aside th:replace="~{fragments/admin-sidebar :: sidebar('administradores')}"></aside>
 
   <div class="min-h-screen flex flex-col admin-main">
-    <main class="flex-1 container mx-auto px-4 py-10" style="max-width: 760px;">
+    <main class="flex-1 container mx-auto px-4 py-10" style="max-width: 980px;">
       <h2 class="text-2xl font-medium mb-2">Administradores</h2>
       <p class="text-sm mb-6" style="color: var(--muted-foreground);">
-        Crea cuentas con acceso completo al panel. Solo tú, como administrador principal, ves esta sección.
+        Crea cuentas de administrador y decide a qué secciones puede entrar cada una. Solo tú, como administrador
+        principal, ves esta sección.
       </p>
 
       <div th:if="${mensajeExito}" class="text-sm mb-4 p-3 rounded-lg" style="background:#dcfce7; color:#166534;">
@@ -40,6 +41,14 @@
             <input type="password" id="confirmar" name="confirmar" minlength="8" maxlength="100" required class="form-input" autocomplete="new-password" />
           </div>
         </div>
+
+        <p class="form-label mt-4 mb-1">¿A qué secciones puede entrar?</p>
+        <p class="form-hint mb-2">El Resumen siempre está disponible. Puedes cambiar esto después.</p>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+          <label th:each="e : ${secciones}" class="flex items-center gap-2 text-sm p-2 rounded-lg" style="border:1px solid var(--border); background:#fff;">
+            <input type="checkbox" name="permisos" th:value="${e.key}" /> <span th:text="${e.value}">Sección</span>
+          </label>
+        </div>
         <button type="submit" class="btn-primary mt-4">Crear administrador</button>
       </form>
 
@@ -49,22 +58,54 @@
             <tr>
               <th>Usuario</th>
               <th>Correo</th>
-              <th style="width:1%;"></th>
+              <th>Estado</th>
+              <th>Accesos</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
-            <tr th:each="a : ${admins}">
+            <tr th:each="a : ${admins}" th:with="esPrincipal=${#strings.equalsIgnoreCase(a.email, emailPrincipal)}">
               <td>
                 <span th:text="${a.username}">admin</span>
-                <span th:if="${#strings.equalsIgnoreCase(a.email, emailPrincipal)}"
-                      class="badge-soft" style="margin-left:.4rem;">Principal</span>
+                <span th:if="${esPrincipal}" class="badge-soft" style="margin-left:.4rem;">Principal</span>
               </td>
               <td th:text="${a.email}">-</td>
               <td>
-                <button type="button" class="btn-danger-outline btn-sm"
-                        th:unless="${#strings.equalsIgnoreCase(a.email, emailPrincipal)}"
-                        th:attr="data-id=${a.idUsuario}, data-email=${a.email}"
-                        onclick="abrirEliminar(this)">Eliminar</button>
+                <span th:if="${!a.suspendido}" class="badge-soft" style="background:#dcfce7; color:#166534;">Activo</span>
+                <span th:if="${a.suspendido}" class="badge-soft" style="background:#fee2e2; color:#991b1b;">Inhabilitado</span>
+              </td>
+              <td style="max-width:260px;">
+                <span th:if="${esPrincipal or a.permisos == null}" class="text-xs" style="color:var(--muted-foreground);">Todo el panel</span>
+                <th:block th:if="${!esPrincipal and a.permisos != null}">
+                  <span th:if="${#strings.isEmpty(a.permisos)}" class="text-xs" style="color:var(--muted-foreground);">Solo el Resumen</span>
+                  <th:block th:each="clave : ${#strings.listSplit(a.permisos, ',')}">
+                    <span class="badge-soft" style="margin:1px;" th:text="${secciones.get(clave)}">Sección</span>
+                  </th:block>
+                </th:block>
+              </td>
+              <td>
+                <div class="acciones" th:unless="${esPrincipal}"><div>
+                  <button type="button" class="btn-outline btn-sm"
+                          th:attr="data-id=${a.idUsuario}, data-email=${a.email}, data-username=${a.username}, data-permisos=${a.permisos == null ? '*' : a.permisos}"
+                          onclick="abrirEditar(this)">Editar</button>
+
+                  <form th:if="${!a.suspendido}" th:action="@{/admin/administradores/{id}/estado(id=${a.idUsuario})}" method="post"
+                        data-confirm="No podrá entrar al panel hasta que lo vuelvas a habilitar." data-confirm-titulo="¿Inhabilitar este administrador?"
+                        data-confirm-ok="Sí, inhabilitar" data-confirm-tipo="peligro">
+                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <input type="hidden" name="accion" value="inhabilitar" />
+                    <button type="submit" class="btn-outline btn-sm" style="color:#b45309; border-color:#b45309;">Inhabilitar</button>
+                  </form>
+                  <form th:if="${a.suspendido}" th:action="@{/admin/administradores/{id}/estado(id=${a.idUsuario})}" method="post">
+                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <input type="hidden" name="accion" value="habilitar" />
+                    <button type="submit" class="btn-outline btn-sm" style="color:#166534; border-color:#166534;">Habilitar</button>
+                  </form>
+
+                  <button type="button" class="btn-danger-outline btn-sm"
+                          th:attr="data-id=${a.idUsuario}, data-email=${a.email}"
+                          onclick="abrirEliminar(this)">Eliminar</button>
+                </div></div>
               </td>
             </tr>
           </tbody>
@@ -74,13 +115,55 @@
     <footer th:replace="~{fragments/footer :: footer}"></footer>
   </div>
 
+  <!-- Ventana para editar -->
+  <div id="modal-editar" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; align-items:center; justify-content:center; padding:1rem;">
+    <form id="form-editar" th:action="@{/admin/administradores/0/editar}" method="post" autocomplete="off"
+          class="card" style="max-width:560px; width:100%; max-height:92vh; overflow-y:auto; background:#fff !important;">
+      <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+      <h3 class="text-lg font-medium mb-3">Editar administrador</h3>
+      <div class="grid md:grid-cols-2 gap-3">
+        <div>
+          <label class="form-label" for="ed-email">Correo</label>
+          <input type="email" id="ed-email" name="email" maxlength="100" required class="form-input" />
+        </div>
+        <div>
+          <label class="form-label" for="ed-username">Usuario</label>
+          <input type="text" id="ed-username" name="username" minlength="3" maxlength="50" required class="form-input" />
+        </div>
+      </div>
+      <div class="mt-3">
+        <label class="form-label" for="ed-nueva">Nueva contraseña (opcional)</label>
+        <input type="password" id="ed-nueva" name="nuevaPassword" minlength="8" maxlength="100" class="form-input" autocomplete="new-password" />
+        <p class="form-hint">Déjala vacía si no quieres cambiarla.</p>
+      </div>
+
+      <p class="form-label mt-4 mb-1">Secciones a las que puede entrar</p>
+      <div class="grid grid-cols-2 gap-2">
+        <label th:each="e : ${secciones}" class="flex items-center gap-2 text-sm p-2 rounded-lg" style="border:1px solid var(--border);">
+          <input type="checkbox" name="permisos" class="ed-permiso" th:value="${e.key}" /> <span th:text="${e.value}">Sección</span>
+        </label>
+      </div>
+
+      <div class="mt-4">
+        <label class="form-label" for="ed-principal">Tu contraseña de administrador principal</label>
+        <input type="password" id="ed-principal" name="passwordPrincipal" required class="form-input" autocomplete="new-password" />
+      </div>
+      <div class="flex gap-3 mt-4" style="justify-content:flex-end;">
+        <button type="button" class="btn-outline" onclick="cerrarEditar()">Cancelar</button>
+        <button type="submit" class="btn-primary">Guardar cambios</button>
+      </div>
+    </form>
+  </div>
+
   <!-- Ventana de confirmación para eliminar -->
   <div id="modal-eliminar" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; align-items:center; justify-content:center; padding:1rem;">
     <form id="form-eliminar" th:action="@{/admin/administradores/0/eliminar}" method="post" autocomplete="off"
-          class="card" style="max-width:420px; width:100%; background:#fff;">
+          class="card" style="max-width:420px; width:100%; background:#fff !important;">
+      <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
       <h3 class="text-lg font-medium mb-2">¿Seguro que quieres eliminar?</h3>
       <p class="text-sm mb-4" style="color: var(--muted-foreground);">
         Se eliminará al administrador <strong id="modal-email"></strong>. Esta acción no se puede deshacer.
+        Si solo quieres que no entre por un tiempo, mejor inhabilítalo.
       </p>
       <label class="form-label" for="passwordPrincipal">Tu contraseña de administrador principal</label>
       <input type="password" id="passwordPrincipal" name="passwordPrincipal" required class="form-input" autocomplete="new-password" />
@@ -91,13 +174,18 @@
     </form>
   </div>
 
+  <script src="/js/confirmar.js"></script>
+  <script src="/js/responsive.js"></script>
   <script>
     var modal = document.getElementById('modal-eliminar');
     var formEliminar = document.getElementById('form-eliminar');
-    var accionBase = formEliminar.getAttribute('action');
+    var accionEliminar = formEliminar.getAttribute('action');
+    var modalEd = document.getElementById('modal-editar');
+    var formEditar = document.getElementById('form-editar');
+    var accionEditar = formEditar.getAttribute('action');
 
     function abrirEliminar(btn) {
-      formEliminar.setAttribute('action', accionBase.replace('/0/eliminar', '/' + btn.dataset.id + '/eliminar'));
+      formEliminar.setAttribute('action', accionEliminar.replace('/0/eliminar', '/' + btn.dataset.id + '/eliminar'));
       document.getElementById('modal-email').textContent = btn.dataset.email;
       document.getElementById('passwordPrincipal').value = '';
       modal.style.display = 'flex';
@@ -105,7 +193,24 @@
     }
     function cerrarEliminar() { modal.style.display = 'none'; }
     modal.addEventListener('click', function (e) { if (e.target === modal) cerrarEliminar(); });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrarEliminar(); });
+
+    function abrirEditar(btn) {
+      formEditar.setAttribute('action', accionEditar.replace('/0/editar', '/' + btn.dataset.id + '/editar'));
+      document.getElementById('ed-email').value = btn.dataset.email;
+      document.getElementById('ed-username').value = btn.dataset.username;
+      document.getElementById('ed-nueva').value = '';
+      document.getElementById('ed-principal').value = '';
+      var p = btn.dataset.permisos || '';
+      var lista = p === '*' ? null : p.split(',');
+      document.querySelectorAll('.ed-permiso').forEach(function (c) {
+        c.checked = lista === null ? true : lista.indexOf(c.value) >= 0;
+      });
+      modalEd.style.display = 'flex';
+    }
+    function cerrarEditar() { modalEd.style.display = 'none'; }
+    modalEd.addEventListener('click', function (e) { if (e.target === modalEd) cerrarEditar(); });
+
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { cerrarEliminar(); cerrarEditar(); } });
   </script>
 </body>
 </html>

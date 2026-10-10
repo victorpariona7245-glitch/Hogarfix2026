@@ -36,6 +36,7 @@ public class AdminUsuariosController {
     private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditoriaService auditoriaService;
+    private final com.hogarfix.service.PermisosAdmin permisosAdmin;
 
     @Value("${app.admin.email:}")
     private String adminEmailConfig;
@@ -73,6 +74,7 @@ public class AdminUsuariosController {
         }
         model.addAttribute("admins", usuarioRepository.findByRol_NombreIgnoreCase("ADMIN"));
         model.addAttribute("emailPrincipal", emailPrincipal());
+        model.addAttribute("secciones", com.hogarfix.service.PermisosAdmin.SECCIONES);
         return "admin/administradores";
     }
 
@@ -81,6 +83,7 @@ public class AdminUsuariosController {
             @RequestParam String username,
             @RequestParam String password,
             @RequestParam String confirmar,
+            @RequestParam(value = "permisos", required = false) java.util.List<String> permisos,
             Principal principal,
             RedirectAttributes ra) {
         if (principal == null) {
@@ -117,10 +120,99 @@ public class AdminUsuariosController {
                     .email(correo)
                     .password(passwordEncoder.encode(password))
                     .rol(rolAdmin)
+                    .permisos(permisosAdmin.normalizar(permisos))
                     .build());
             auditoriaService.registrar(principal.getName(), "Administrador creado",
                     "Creó al administrador " + correo + " (usuario " + usuario + ")");
             ra.addFlashAttribute("mensajeExito", "Administrador " + correo + " creado correctamente.");
+        }
+        return "redirect:/admin/administradores";
+    }
+
+
+    private java.util.Optional<Usuario> adminPorId(Long id) {
+        return usuarioRepository.findByRol_NombreIgnoreCase("ADMIN").stream()
+                .filter(u -> u.getIdUsuario().equals(id)).findFirst();
+    }
+
+    /** Edita los datos y los accesos de otro administrador (pide la contraseña del principal). */
+    @PostMapping("/{id}/editar")
+    public String editar(@PathVariable Long id,
+            @RequestParam String email,
+            @RequestParam String username,
+            @RequestParam(defaultValue = "") String nuevaPassword,
+            @RequestParam(value = "permisos", required = false) java.util.List<String> permisos,
+            @RequestParam(defaultValue = "") String passwordPrincipal,
+            Principal principal, RedirectAttributes ra) {
+        if (principal == null) return "redirect:/auth/login";
+        var principalUsuario = usuarioPrincipal(principal);
+        if (principalUsuario.isEmpty()) return "redirect:/admin/dashboard";
+        if (!passwordEncoder.matches(passwordPrincipal, principalUsuario.get().getPassword())) {
+            auditoriaService.registrar(principal.getName(), "Intento fallido",
+                    "Intentó editar a un administrador con contraseña incorrecta");
+            ra.addFlashAttribute("mensajeError", "Tu contraseña es incorrecta. No se guardaron los cambios.");
+            return "redirect:/admin/administradores";
+        }
+        var adminOpt = adminPorId(id);
+        if (adminOpt.isEmpty()) {
+            ra.addFlashAttribute("mensajeError", "Ese administrador no existe.");
+            return "redirect:/admin/administradores";
+        }
+        Usuario admin = adminOpt.get();
+        if (admin.getEmail().equalsIgnoreCase(emailPrincipal())) {
+            ra.addFlashAttribute("mensajeError", "El administrador principal no se edita desde aquí.");
+            return "redirect:/admin/administradores";
+        }
+
+        String correo = email == null ? "" : email.trim().toLowerCase();
+        String usuario = username == null ? "" : username.trim();
+        if (!correo.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$") || correo.length() > 100) {
+            ra.addFlashAttribute("mensajeError", "Ingresa un correo válido.");
+        } else if (usuario.length() < 3 || usuario.length() > 50) {
+            ra.addFlashAttribute("mensajeError", "El nombre de usuario debe tener entre 3 y 50 caracteres.");
+        } else if (!nuevaPassword.isEmpty() && nuevaPassword.length() < 8) {
+            ra.addFlashAttribute("mensajeError", "La nueva contraseña debe tener al menos 8 caracteres.");
+        } else if (!correo.equalsIgnoreCase(admin.getEmail()) && usuarioRepository.existsByEmail(correo)) {
+            ra.addFlashAttribute("mensajeError", "Ya existe una cuenta con ese correo.");
+        } else if (!usuario.equals(admin.getUsername()) && usuarioRepository.existsByUsername(usuario)) {
+            ra.addFlashAttribute("mensajeError", "Ese nombre de usuario ya está en uso.");
+        } else {
+            String anterior = admin.getEmail();
+            admin.setEmail(correo);
+            admin.setUsername(usuario);
+            if (!nuevaPassword.isEmpty()) admin.setPassword(passwordEncoder.encode(nuevaPassword));
+            admin.setPermisos(permisosAdmin.normalizar(permisos));
+            usuarioRepository.save(admin);
+            auditoriaService.registrar(principal.getName(), "Administrador editado",
+                    "Editó a " + anterior + (nuevaPassword.isEmpty() ? "" : " (cambió su contraseña)")
+                            + ". Accesos: " + (admin.getPermisos().isEmpty() ? "ninguno" : admin.getPermisos()));
+            ra.addFlashAttribute("mensajeExito", "Cambios guardados para " + correo + ".");
+        }
+        return "redirect:/admin/administradores";
+    }
+
+    /** Inhabilita o vuelve a habilitar a un administrador (no puede iniciar sesión mientras esté inhabilitado). */
+    @PostMapping("/{id}/estado")
+    public String cambiarEstado(@PathVariable Long id, @RequestParam String accion,
+            Principal principal, RedirectAttributes ra) {
+        if (principal == null) return "redirect:/auth/login";
+        if (!esPrincipal(principal)) return "redirect:/admin/dashboard";
+        var adminOpt = adminPorId(id);
+        if (adminOpt.isEmpty()) {
+            ra.addFlashAttribute("mensajeError", "Ese administrador no existe.");
+        } else if (adminOpt.get().getEmail().equalsIgnoreCase(emailPrincipal())) {
+            ra.addFlashAttribute("mensajeError", "No puedes inhabilitar al administrador principal.");
+        } else {
+            Usuario admin = adminOpt.get();
+            boolean inhabilitar = "inhabilitar".equals(accion);
+            admin.setSuspendido(inhabilitar);
+            admin.setMotivoSuspension(inhabilitar ? "Inhabilitado por el administrador principal" : null);
+            usuarioRepository.save(admin);
+            auditoriaService.registrar(principal.getName(),
+                    inhabilitar ? "Administrador inhabilitado" : "Administrador habilitado", admin.getEmail());
+            ra.addFlashAttribute("mensajeExito", inhabilitar
+                    ? admin.getEmail() + " ya no puede entrar al panel."
+                    : admin.getEmail() + " puede volver a entrar.");
         }
         return "redirect:/admin/administradores";
     }

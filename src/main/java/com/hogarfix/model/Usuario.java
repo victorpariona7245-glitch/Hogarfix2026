@@ -50,6 +50,11 @@ public class Usuario extends Auditable implements UserDetails {
     @Column(name = "motivo_suspension", length = 255)
     private String motivoSuspension;
 
+    // Secciones del panel admin a las que puede entrar (claves separadas por coma).
+    // null = acceso completo (cuentas anteriores); "" = ninguna. El admin principal siempre tiene todo.
+    @Column(name = "permisos", length = 300)
+    private String permisos;
+
     // 🔒 Métodos requeridos por UserDetails
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

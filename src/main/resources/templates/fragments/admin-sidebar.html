@@ -29,22 +29,22 @@
   </style>
   <p class="side-title">Administración</p>
   <a th:href="@{/admin/dashboard}" th:classappend="${activo == 'dashboard'} ? 'active'">Resumen</a>
-  <a th:href="@{/admin/reportes}" th:classappend="${activo == 'reportes'} ? 'active'">Reporte mensual</a>
-  <a th:href="@{/admin/clientes}" th:classappend="${activo == 'clientes'} ? 'active'">Clientes</a>
-  <a th:href="@{/admin/tecnicos}" th:classappend="${activo == 'tecnicos'} ? 'active'">Técnicos</a>
-  <a th:href="@{/admin/categorias}" th:classappend="${activo == 'categorias'} ? 'active'">Especialidades</a>
+  <a th:href="@{/admin/reportes}" th:if="${permisosAdmin == null or permisosAdmin.contains('*') or permisosAdmin.contains('reportes')}" th:classappend="${activo == 'reportes'} ? 'active'">Reporte mensual</a>
+  <a th:href="@{/admin/clientes}" th:if="${permisosAdmin == null or permisosAdmin.contains('*') or permisosAdmin.contains('clientes')}" th:classappend="${activo == 'clientes'} ? 'active'">Clientes</a>
+  <a th:href="@{/admin/tecnicos}" th:if="${permisosAdmin == null or permisosAdmin.contains('*') or permisosAdmin.contains('tecnicos')}" th:classappend="${activo == 'tecnicos'} ? 'active'">Técnicos</a>
+  <a th:href="@{/admin/categorias}" th:if="${permisosAdmin == null or permisosAdmin.contains('*') or permisosAdmin.contains('categorias')}" th:classappend="${activo == 'categorias'} ? 'active'">Especialidades</a>
   <a th:href="@{/admin/administradores}"
      th:if="${session.usuarioActual != null and session.usuarioActual.email == (#strings.isEmpty(@environment.getProperty('app.admin.email')) ? 'admin@example.com' : @environment.getProperty('app.admin.email'))}"
      th:classappend="${activo == 'administradores'} ? 'active'">Administradores</a>
-  <a th:href="@{/admin/actividad}" th:classappend="${activo == 'actividad'} ? 'active'">Actividad</a>
-  <a th:href="@{/admin/pagos}" th:classappend="${activo == 'pagos'} ? 'active'">Pagos</a>
-  <a th:href="@{/admin/comisiones}" th:classappend="${activo == 'comisiones'} ? 'active'">Cobros y comisiones</a>
-  <a th:href="@{/admin/disputas}" th:classappend="${activo == 'disputas'} ? 'active'">
+  <a th:href="@{/admin/actividad}" th:if="${permisosAdmin == null or permisosAdmin.contains('*') or permisosAdmin.contains('actividad')}" th:classappend="${activo == 'actividad'} ? 'active'">Actividad</a>
+  <a th:href="@{/admin/pagos}" th:if="${permisosAdmin == null or permisosAdmin.contains('*') or permisosAdmin.contains('pagos')}" th:classappend="${activo == 'pagos'} ? 'active'">Pagos</a>
+  <a th:href="@{/admin/comisiones}" th:if="${permisosAdmin == null or permisosAdmin.contains('*') or permisosAdmin.contains('comisiones')}" th:classappend="${activo == 'comisiones'} ? 'active'">Cobros y comisiones</a>
+  <a th:href="@{/admin/disputas}" th:if="${permisosAdmin == null or permisosAdmin.contains('*') or permisosAdmin.contains('disputas')}" th:classappend="${activo == 'disputas'} ? 'active'">
     <span>Disputas</span>
     <span th:if="${@disputaRepository.countByEstado('ABIERTA') > 0}"
           class="side-badge" th:text="${@disputaRepository.countByEstado('ABIERTA')}">0</span>
   </a>
-  <a th:href="@{/admin/certificados}" th:classappend="${activo == 'certificados'} ? 'active'">
+  <a th:href="@{/admin/certificados}" th:if="${permisosAdmin == null or permisosAdmin.contains('*') or permisosAdmin.contains('certificados')}" th:classappend="${activo == 'certificados'} ? 'active'">
     <span>Certificados</span>
     <span th:if="${certificadosPendientesCount != null and certificadosPendientesCount > 0}"
           class="side-badge" th:text="${certificadosPendientesCount}">0</span>

@@ -9,6 +9,10 @@
       <main class="flex-1 container mx-auto px-4 py-10">
         <h2 class="text-2xl font-medium mb-1">Panel de Administración</h2>
         <p class="text-sm mb-6" style="color: var(--muted-foreground);">Resumen de la actividad de HogarFix.</p>
+        <div th:if="${param.sinpermiso != null}" class="text-sm mb-4 p-3 rounded-lg" style="background:#fee2e2; color:#991b1b;">
+          No tienes acceso a esa sección. Pídele al administrador principal que te la habilite.
+        </div>
+        <div th:if="${mensajeError}" class="text-sm mb-4 p-3 rounded-lg" style="background:#fee2e2; color:#991b1b;" th:text="${mensajeError}"></div>
 
         <!-- Números clave -->
         <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
