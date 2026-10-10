@@ -39,6 +39,11 @@
   <a th:href="@{/admin/actividad}" th:classappend="${activo == 'actividad'} ? 'active'">Actividad</a>
   <a th:href="@{/admin/pagos}" th:classappend="${activo == 'pagos'} ? 'active'">Pagos</a>
   <a th:href="@{/admin/comisiones}" th:classappend="${activo == 'comisiones'} ? 'active'">Cobros y comisiones</a>
+  <a th:href="@{/admin/disputas}" th:classappend="${activo == 'disputas'} ? 'active'">
+    <span>Disputas</span>
+    <span th:if="${@disputaRepository.countByEstado('ABIERTA') > 0}"
+          class="side-badge" th:text="${@disputaRepository.countByEstado('ABIERTA')}">0</span>
+  </a>
   <a th:href="@{/admin/certificados}" th:classappend="${activo == 'certificados'} ? 'active'">
     <span>Certificados</span>
     <span th:if="${certificadosPendientesCount != null and certificadosPendientesCount > 0}"

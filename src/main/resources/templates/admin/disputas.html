@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Disputas')}"></head>
+<body style="background-color: rgba(236,236,240,0.25);">
+  <header th:replace="~{fragments/navbar :: navbar}"></header>
+  <aside th:replace="~{fragments/admin-sidebar :: sidebar('disputas')}"></aside>
+
+  <div class="min-h-screen flex flex-col admin-main">
+    <main class="flex-1 container mx-auto px-4 py-10">
+      <h2 class="text-2xl font-medium mb-1">Disputas</h2>
+      <p class="text-sm mb-6" style="color: var(--muted-foreground);">
+        Problemas reportados por clientes y técnicos. Mientras un reporte esté abierto, no se puede aprobar ni
+        transferir el pago de ese servicio.
+        <strong th:text="${abiertas + ' abierta(s)'}">0 abiertas</strong>
+      </p>
+
+      <div th:if="${mensajeExito}" class="p-3 text-sm rounded-lg mb-4" style="background:#dcfce7; color:#166534;" th:text="${mensajeExito}"></div>
+      <div th:if="${mensajeError}" class="p-3 text-sm rounded-lg mb-4" style="background:#fee2e2; color:#991b1b;" th:text="${mensajeError}"></div>
+
+      <div th:if="${#lists.isEmpty(disputas)}" class="card text-sm" style="color: var(--muted-foreground);">
+        No hay reportes. Cuando un cliente o técnico reporte un problema, aparecerá aquí.
+      </div>
+
+      <div class="space-y-4">
+        <div th:each="d : ${disputas}" class="card">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-2">
+              <strong th:text="${'Reporte #' + d.id + ' · Servicio #' + d.idServicio}">Reporte #1</strong>
+              <span th:if="${d.estado == 'ABIERTA'}" class="badge-soft" style="background:#fee2e2; color:#991b1b;">ABIERTA</span>
+              <span th:if="${d.estado != 'ABIERTA'}" class="badge-soft" style="background:#dcfce7; color:#166534;">RESUELTA</span>
+            </div>
+            <span class="text-xs" style="color: var(--muted-foreground);"
+                  th:text="${#temporals.format(d.fecha, 'dd/MM/yyyy HH:mm')}">fecha</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <p><span style="color:var(--muted-foreground);">Lo reportó:</span>
+                <strong th:text="${d.rolAbre == 'TECNICO' ? 'El técnico' : 'El cliente'}">El cliente</strong>
+                <span class="text-xs" style="color:var(--muted-foreground);" th:text="${'(' + d.abiertaPor + ')'}"></span></p>
+              <p><span style="color:var(--muted-foreground);">Cliente:</span> <span th:text="${d.cliente}">Cliente</span></p>
+              <p><span style="color:var(--muted-foreground);">Técnico:</span> <span th:text="${d.tecnico}">Técnico</span></p>
+              <p><span style="color:var(--muted-foreground);">Servicio:</span>
+                <span th:text="${d.categoria + ' — ' + d.servicioDescripcion}">Categoría</span></p>
+              <p><span style="color:var(--muted-foreground);">Monto:</span> <span th:text="${d.monto}">S/ 0</span>
+                · <span th:text="${d.metodoPago}">yape</span> · pago: <strong th:text="${d.estadoPago}">PAGADO</strong></p>
+            </div>
+            <div class="p-3 rounded-lg" style="background:#fff7ed; border:1px solid #fed7aa;">
+              <p class="text-xs font-semibold mb-1" style="color:#9a3412;"
+                 th:text="${'Motivo: ' + #strings.replace(d.motivo, '_', ' ')}">Motivo</p>
+              <p th:text="${d.descripcion}">Descripción</p>
+            </div>
+          </div>
+
+          <!-- Resolver -->
+          <form th:if="${d.estado == 'ABIERTA'}" th:action="@{/admin/disputas/{id}/resolver(id=${d.id})}" method="post"
+                class="mt-4 pt-4 grid grid-cols-1 md:grid-cols-4 gap-3 items-start" style="border-top:1px solid var(--border);">
+            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            <select name="decision" required class="form-select" style="padding:.5rem;">
+              <option value="">Decisión…</option>
+              <option value="A_FAVOR_CLIENTE">A favor del cliente (devolver dinero)</option>
+              <option value="A_FAVOR_TECNICO">A favor del técnico</option>
+              <option value="ACUERDO">Acuerdo entre ambos</option>
+            </select>
+            <textarea name="nota" required minlength="5" maxlength="500" rows="2" class="form-textarea md:col-span-2"
+                      placeholder="Explicación que verán el cliente y el técnico"></textarea>
+            <button type="submit" class="btn-primary">Resolver y avisar</button>
+          </form>
+
+          <div th:if="${d.estado != 'ABIERTA'}" class="mt-4 pt-4 text-sm" style="border-top:1px solid var(--border);">
+            <p><strong th:text="${#strings.replace(d.decision, '_', ' ')}">Decisión</strong>
+              <span class="text-xs" style="color:var(--muted-foreground);"
+                    th:text="${d.fechaResolucion != null ? '· ' + #temporals.format(d.fechaResolucion, 'dd/MM/yyyy HH:mm') : ''}"></span></p>
+            <p th:text="${d.resolucion}">Explicación</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

@@ -23,6 +23,7 @@ public class PagoService {
     private final PagoRepository pagoRepository;
     private final NotificacionService notificacionService;
     private final UsuarioRepository usuarioRepository;
+    private final com.hogarfix.repository.DisputaRepository disputaRepository;
     private final EmailService emailService;
 
     /** Porcentaje que se queda HogarFix por servicio (variable de entorno COMISION_PORCENTAJE, por defecto 10). */
@@ -276,6 +277,10 @@ public class PagoService {
         if (!"EN_REVISION".equalsIgnoreCase(p.getEstado())) {
             throw new IllegalStateException("Este pago no está en revisión");
         }
+        if (p.getServicio() != null && disputaRepository.existsByServicio_IdServicioAndEstado(
+                p.getServicio().getIdServicio(), "ABIERTA")) {
+            throw new IllegalStateException("Hay un reporte abierto para este servicio. Resuélvelo primero en Disputas");
+        }
         aplicarComision(p);
         p.setEstado("PAGADO");
         p.setNotaRevision(null);
@@ -320,6 +325,10 @@ public class PagoService {
         Pago p = pagoRepository.findById(id).orElseThrow(() -> new IllegalStateException("Pago no encontrado"));
         if (!"PAGADO".equalsIgnoreCase(p.getEstado())) {
             throw new IllegalStateException("Solo se liquidan pagos ya pagados");
+        }
+        if (p.getServicio() != null && disputaRepository.existsByServicio_IdServicioAndEstado(
+                p.getServicio().getIdServicio(), "ABIERTA")) {
+            throw new IllegalStateException("Hay un reporte abierto para este servicio. Resuélvelo primero en Disputas");
         }
         p.setLiquidado(true);
         p.setFechaLiquidacion(java.time.LocalDateTime.now());

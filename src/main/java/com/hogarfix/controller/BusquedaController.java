@@ -26,6 +26,7 @@ public class BusquedaController {
     private final CiudadService ciudadService;
     private final CategoriaService categoriaService;
     private final CalificacionRepository calificacionRepository;
+    private final com.hogarfix.service.PagoService pagoService;
 
     @GetMapping("/buscartecnicos")
     public String buscarTecnicos(
@@ -40,6 +41,8 @@ public class BusquedaController {
 
         List<Tecnico> filtrados = tecnicos.stream()
                 .filter(t -> t.getUsuario() == null || !t.getUsuario().isSuspendido())
+                // Técnicos con comisión vencida sin entregar no reciben solicitudes: no se muestran
+                .filter(t -> !pagoService.tecnicoBloqueadoPorComision(t.getIdTecnico()))
                 .filter(t -> {
                     if (ciudadId == null) return true;
                     return t.getDireccion() != null && t.getDireccion().getCiudad() != null && Objects.equals(t.getDireccion().getCiudad().getIdCiudad(), ciudadId);

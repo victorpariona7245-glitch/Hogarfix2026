@@ -32,13 +32,16 @@
             <td th:text="${f.categoria}">Plomería</td>
             <td th:text="${f.tecnico}">Técnico</td>
             <td th:text="${'S/ ' + #numbers.formatDecimal(f.monto, 1, 2)}">S/ 0.00</td>
-            <td><a th:href="@{/boletas/{id}(id=${f.idServicio})}" class="btn-primary btn-sm">Ver boleta</a></td>
+            <td><div class="acciones"><div><a th:href="@{/boletas/{id}(id=${f.idServicio})}" class="btn-primary btn-sm">Ver boleta</a>
+              <button type="button" class="btn-outline btn-sm"  th:attr="data-servicio-id=${f.idServicio}" data-volver="cliente" th:data-csrf="${_csrf != null ? _csrf.token : ''}" th:data-csrf-param="${_csrf != null ? _csrf.parameterName : '_csrf'}" onclick="reportarProblema(this)">⚠ Reportar problema</button></div></div></td>
           </tr>
         </tbody>
       </table>
     </div>
   </main>
 <link href="/css/responsive.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="/js/responsive.js"></script>
+<script src="/js/disputa.js"></script>
 </body>
 </html>

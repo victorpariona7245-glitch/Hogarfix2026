@@ -335,6 +335,11 @@
                       <span class="badge-soft" th:text="${#strings.replace(s.estado, '_', ' ')}">PENDIENTE</span>
                       <button type="button" class="text-xs underline" style="margin-left:6px; color: var(--muted-foreground);"
                               th:onclick="|verHistorial(${s.idServicio})|">Historial</button>
+                      <button th:if="${s.estado == 'ACEPTADO' or s.estado == 'EN_CAMINO' or s.estado == 'EN_PROCESO' or s.estado == 'FINALIZADO'}"
+                              type="button" class="text-xs underline" style="margin-left:6px; color:#b45309;"
+                              th:attr="data-servicio-id=${s.idServicio}" data-volver="tecnico"
+                              th:data-csrf="${_csrf != null ? _csrf.token : ''}" th:data-csrf-param="${_csrf != null ? _csrf.parameterName : '_csrf'}"
+                              onclick="reportarProblema(this)">⚠ Reportar problema</button>
                     </div>
 
                     <!-- Acciones según estado -->
@@ -901,5 +906,6 @@
   </div>
 <script src="/js/confirmar.js"></script>
   <script src="/js/responsive.js"></script>
+  <script src="/js/disputa.js"></script>
 </body>
 </html>

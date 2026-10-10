@@ -180,6 +180,7 @@
             <div th:replace="~{fragments/progreso-servicio :: progreso(${s.estado})}"></div>
             <div class="flex gap-2 mt-2">
               <button type="button" class="btn-outline btn-sm" th:onclick="|verHistorial(${s.idServicio})|">Historial</button>
+              <button type="button" class="btn-outline btn-sm"  th:attr="data-servicio-id=${s.idServicio}" data-volver="cliente" th:data-csrf="${_csrf != null ? _csrf.token : ''}" th:data-csrf-param="${_csrf != null ? _csrf.parameterName : '_csrf'}" onclick="reportarProblema(this)">⚠ Reportar problema</button>
               <th:block th:if="${s.estado == 'ACEPTADO' or s.estado == 'EN_CAMINO'}">
                 <form th:action="@{/servicios/{id}/cancelar-cliente(id=${s.idServicio})}" method="post" style="display:inline"
                         data-confirm="Avisaremos al técnico de la cancelación." data-confirm-titulo="¿Cancelar tu solicitud?" data-confirm-ok="Sí, cancelar" data-confirm-tipo="peligro">
@@ -210,7 +211,10 @@
                 <td th:text="${p.servicio != null and p.servicio.categoria != null ? p.servicio.categoria.nombre : 'Servicio'}">Reparación de lavadora</td>
                 <td th:text="${'S/ ' + p.monto}">S/ 120.00</td>
                 <td>
+                  <div class="acciones"><div>
                   <a th:href="@{/pagos(pagoId=${p.idPago})}" class="btn-primary btn-sm">Pagar</a>
+                  <button th:if="${p.servicio != null}" type="button" class="btn-outline btn-sm"  th:attr="data-servicio-id=${p.servicio.idServicio}" data-volver="cliente" th:data-csrf="${_csrf != null ? _csrf.token : ''}" th:data-csrf-param="${_csrf != null ? _csrf.parameterName : '_csrf'}" onclick="reportarProblema(this)">⚠ Reportar problema</button>
+                  </div></div>
                 </td>
               </tr>
             </tbody>
@@ -621,5 +625,6 @@
   </div>
 <script src="/js/confirmar.js"></script>
   <script src="/js/responsive.js"></script>
+  <script src="/js/disputa.js"></script>
 </body>
 </html>
