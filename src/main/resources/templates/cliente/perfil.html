@@ -65,6 +65,7 @@
         <a href="/" class="text-2xl font-medium text-primary">HogarFix</a>
         <div class="flex items-center space-x-3">
           <div th:replace="~{fragments/notificaciones :: campana}"></div>
+          <a th:href="@{/boletas}" class="btn-outline btn-sm">🧾 Mis boletas</a>
           <form th:action="@{/logout}" method="post">
             <button type="submit" class="btn-outline btn-sm">Cerrar sesión</button>
           </form>

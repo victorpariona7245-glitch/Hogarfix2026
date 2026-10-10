@@ -23,6 +23,7 @@ public class PagoService {
     private final PagoRepository pagoRepository;
     private final NotificacionService notificacionService;
     private final UsuarioRepository usuarioRepository;
+    private final EmailService emailService;
 
     /** Porcentaje que se queda HogarFix por servicio (variable de entorno COMISION_PORCENTAJE, por defecto 10). */
     @Value("${COMISION_PORCENTAJE:10}")
@@ -337,6 +338,40 @@ public class PagoService {
         return guardado;
     }
 
+    private static String metodoTexto(String metodo) {
+        if (metodo == null) return "-";
+        return switch (metodo.toLowerCase()) {
+            case "efectivo" -> "Efectivo";
+            case "plin" -> "Plin";
+            case "yape" -> "Yape";
+            default -> metodo;
+        };
+    }
+
+    /** Manda la boleta del servicio al correo con el que se registró el cliente. No falla si el correo falla. */
+    public void enviarBoleta(Pago p) {
+        try {
+            if (p.getCliente() == null || p.getCliente().getUsuario() == null || p.getServicio() == null) return;
+            String email = p.getCliente().getUsuario().getEmail();
+            var s = p.getServicio();
+            java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+            String nombreCliente = p.getCliente().getNombres();
+            String tecnico = s.getTecnico() != null
+                    ? (s.getTecnico().getNombres() + " " + s.getTecnico().getApellidoPaterno()).trim() : "-";
+            emailService.sendBoletaEmail(email, nombreCliente, s.getIdServicio(),
+                    String.format("B001-%06d", p.getIdPago()),
+                    s.getFechaFinalizacion() != null ? s.getFechaFinalizacion().format(fmt) : "-",
+                    p.getFechaPago() != null ? p.getFechaPago().format(fmt) : "-",
+                    tecnico,
+                    s.getCategoria() != null ? s.getCategoria().getNombre() : "Servicio",
+                    s.getDescripcion(),
+                    metodoTexto(p.getMetodoPago()),
+                    p.getMonto().setScale(2, RoundingMode.HALF_UP).toPlainString());
+        } catch (Exception ex) {
+            log.warn("No se pudo enviar la boleta del pago {}: {}", p.getIdPago(), ex.getMessage());
+        }
+    }
+
     private void notificarPagado(Pago p) {
         try {
             BigDecimal comision = p.getComision() != null ? p.getComision() : calcularComision(p.getMonto());
@@ -352,9 +387,11 @@ public class PagoService {
                                 + " (comisión S/ " + comision + ")";
                 notificacionService.crear(tecnico.getUsuario(), "PAGO", msg, "/tecnicos/panel", p.getIdPago());
             }
+            enviarBoleta(p);
             if (!efectivo && p.getCliente() != null) {
                 notificacionService.crear(p.getCliente().getUsuario(), "PAGO",
-                        "Tu pago de S/ " + p.getMonto() + " fue confirmado. ¡Gracias!", "/clientes/perfil",
+                        "Tu pago de S/ " + p.getMonto() + " fue confirmado. Ya puedes ver tu boleta",
+                        p.getServicio() != null ? "/boletas/" + p.getServicio().getIdServicio() : "/clientes/perfil",
                         p.getIdPago());
             }
         } catch (Exception ex) {

@@ -35,6 +35,7 @@ public class TecnicoPagosController {
     @Getter
     @AllArgsConstructor
     public static class FilaPago {
+        private Long idServicio;
         private LocalDateTime fecha;
         private String servicio;
         private String cliente;
@@ -94,7 +95,7 @@ public class TecnicoPagosController {
             String servicio = (p.getServicio() != null && p.getServicio().getCategoria() != null)
                     ? p.getServicio().getCategoria().getNombre() : "Servicio";
 
-            filas.add(new FilaPago(p.getFechaPago(), servicio, cliente,
+            filas.add(new FilaPago(p.getServicio() != null ? p.getServicio().getIdServicio() : null, p.getFechaPago(), servicio, cliente,
                     p.getMetodoPago() == null ? "-" : p.getMetodoPago(), efectivo, monto, comision, neto, estado));
         }
 

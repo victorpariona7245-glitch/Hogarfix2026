@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Mis boletas')}"></head>
+<body style="background-color: rgba(236,236,240,0.3);">
+  <header class="w-full bg-white border-b sticky top-0 z-50" style="border-color: var(--border);">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="/" class="text-2xl font-medium text-primary">HogarFix</a>
+      <div class="flex items-center space-x-3">
+        <a th:href="@{/clientes/perfil}" class="btn-outline btn-sm">← Mi perfil</a>
+        <form th:action="@{/logout}" method="post">
+          <button type="submit" class="btn-outline btn-sm">Cerrar sesión</button>
+        </form>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto p-6">
+    <h2 class="text-2xl font-medium mb-1">Mis boletas</h2>
+    <p class="text-sm mb-6" style="color: var(--muted-foreground);">Aquí están las boletas de tus servicios ya pagados. Puedes imprimirlas o guardarlas como PDF.</p>
+
+    <div th:if="${#lists.isEmpty(filas)}" class="card text-sm" style="color:var(--muted-foreground);">
+      Aún no tienes boletas. Aparecerán cuando pagues un servicio.
+    </div>
+
+    <div th:if="${!#lists.isEmpty(filas)}" class="card overflow-x-auto p-0">
+      <table class="table-clean">
+        <thead><tr><th>N° boleta</th><th>Fecha de pago</th><th>Servicio</th><th>Técnico</th><th>Total</th><th></th></tr></thead>
+        <tbody>
+          <tr th:each="f : ${filas}">
+            <td th:text="${f.numero}">B001-000001</td>
+            <td th:text="${f.fecha != null ? #temporals.format(f.fecha, 'dd/MM/yyyy HH:mm') : '-'}">01/01/2026</td>
+            <td th:text="${f.categoria}">Plomería</td>
+            <td th:text="${f.tecnico}">Técnico</td>
+            <td th:text="${'S/ ' + #numbers.formatDecimal(f.monto, 1, 2)}">S/ 0.00</td>
+            <td><a th:href="@{/boletas/{id}(id=${f.idServicio})}" class="btn-primary btn-sm">Ver boleta</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</body>
+</html>
