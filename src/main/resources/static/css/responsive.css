@@ -1,5 +1,5 @@
 /* HogarFix - ajustes de diseño para celular y PC */
-html, body { overflow-x: hidden; }
+html, body { overflow-x: clip; }
 img { max-width: 100%; }
 
 /* Cabecera */
@@ -50,4 +50,71 @@ img { max-width: 100%; }
   .overflow-x-auto { overflow-x: visible; }
 
   .toast { left: 12px !important; right: 12px !important; bottom: 12px !important; }
+}
+
+/* ================= Separaciones y contraste (cliente, técnico, admin) ================= */
+:root { --sep: #cfd6e2; --sep-suave: #e2e7ef; --fondo-pagina: #e9edf4; }
+
+body:not(.auth-gradient) { background-color: var(--fondo-pagina) !important; }
+
+/* Barra superior bien marcada */
+header.sticky, header.bg-white {
+  background: #fff !important;
+  border-bottom: 1px solid var(--sep) !important;
+  box-shadow: 0 2px 8px rgba(16, 24, 40, .08);
+}
+
+/* Tarjetas / secciones: blancas, con borde y sombra para que se separen del fondo */
+.card, .glass, section.rounded-2xl, .bg-white.rounded-lg, .bg-white.rounded-xl, .bg-white.rounded-2xl {
+  background: #fff !important;
+  border: 1px solid var(--sep) !important;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, .08), 0 6px 16px rgba(16, 24, 40, .05);
+}
+/* Cajas internas (servicio en proceso, certificado, calificaciones...) */
+.card .border, .card .rounded-xl.border, .card .rounded-lg.border {
+  border-color: var(--sep) !important;
+  background: #fafbfd;
+}
+
+/* Títulos de sección separados por una línea */
+.card h3, section h3 { font-weight: 600; }
+.card h3.mt-6, .card h3.mt-8, section h3.mt-6, section h3.mt-8 {
+  border-top: 1px solid var(--sep-suave);
+  padding-top: 1.25rem;
+  margin-top: 1.75rem;
+}
+.card h2 + .space-y-2, .card hr { border-color: var(--sep-suave); }
+.card .border-t, .card .border-b { border-color: var(--sep-suave) !important; }
+
+/* Tablas con filas bien separadas */
+.table-clean { border-collapse: separate; border-spacing: 0; }
+.table-clean thead th {
+  background: #f1f4f9; color: #475467; font-weight: 600; font-size: .75rem;
+  text-transform: uppercase; letter-spacing: .04em;
+  border-bottom: 2px solid var(--sep); padding: .7rem .75rem;
+}
+.table-clean thead th:first-child { border-top-left-radius: 10px; }
+.table-clean thead th:last-child { border-top-right-radius: 10px; }
+.table-clean td { border-bottom: 1px solid var(--sep-suave) !important; padding: .9rem .75rem; vertical-align: middle; }
+.table-clean tbody tr:nth-child(even) td { background: #fafbfd; }
+.table-clean tbody tr:hover td { background: #f1f4f9; }
+.table-clean tbody tr:last-child td { border-bottom: 0 !important; }
+
+/* Más aire entre bloques */
+main.grid, main[class*="grid"] { gap: 1.5rem; }
+.space-y-6 > * + * { margin-top: 1.5rem; }
+
+/* Menú lateral del admin */
+.admin-sidebar { box-shadow: 2px 0 8px rgba(16, 24, 40, .06); border-right: 1px solid var(--sep) !important; }
+
+/* Campos de formulario visibles */
+.form-input, .form-select, .form-textarea, input.border, select.border, textarea.border { border-color: #b8c1d1 !important; background: #fff; }
+
+@media (max-width: 640px) {
+  .table-clean thead th { display: none; }
+  .table-clean tr { border: 1px solid var(--sep) !important; box-shadow: 0 1px 3px rgba(16, 24, 40, .08); }
+  .table-clean tbody tr:nth-child(even) td, .table-clean tbody tr:hover td { background: transparent; }
+  .table-clean td { border-bottom: 1px dashed var(--sep-suave) !important; padding: 8px 0 !important; }
+  .table-clean td:last-child { border-bottom: 0 !important; }
 }
