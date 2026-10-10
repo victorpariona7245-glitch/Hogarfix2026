@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Mis pagos')}"></head>
+<body style="background-color: rgba(236,236,240,0.3);">
+  <header class="w-full bg-white border-b sticky top-0 z-50" style="border-color: var(--border);">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="/" class="text-2xl font-medium text-primary">HogarFix</a>
+      <div class="flex items-center space-x-3">
+        <div th:replace="~{fragments/notificaciones :: campana}"></div>
+        <a th:href="@{/tecnicos/panel}" class="btn-outline btn-sm">← Mi panel</a>
+        <form th:action="@{/logout}" method="post">
+          <button type="submit" class="btn-outline btn-sm">Cerrar sesión</button>
+        </form>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-6">
+    <h2 class="text-2xl font-medium mb-1">Mis pagos</h2>
+    <p class="text-sm mb-6" style="color: var(--muted-foreground);">
+      De cada servicio, HogarFix se queda una comisión del <strong th:text="${porcentaje + '%'}">10%</strong>.
+      Aquí ves cuánto cobraste, cuánto se descontó y cuánto te queda.
+    </p>
+
+    <!-- Resumen -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div class="card"><p class="text-xs" style="color:var(--muted-foreground);">Total cobrado</p>
+        <p class="text-xl font-semibold" th:text="${'S/ ' + #numbers.formatDecimal(totalCobrado,1,2)}">S/ 0.00</p></div>
+      <div class="card"><p class="text-xs" style="color:var(--muted-foreground);">Comisión descontada</p>
+        <p class="text-xl font-semibold" style="color:#dc2626;" th:text="${'- S/ ' + #numbers.formatDecimal(totalComision,1,2)}">S/ 0.00</p></div>
+      <div class="card"><p class="text-xs" style="color:var(--muted-foreground);">Te queda (neto)</p>
+        <p class="text-xl font-semibold" style="color:#16a34a;" th:text="${'S/ ' + #numbers.formatDecimal(totalNeto,1,2)}">S/ 0.00</p></div>
+      <div class="card"><p class="text-xs" style="color:var(--muted-foreground);">Pendiente</p>
+        <p class="text-sm mt-1">
+          <span th:if="${porRecibir.signum() > 0}">HogarFix te debe transferir <strong th:text="${'S/ ' + #numbers.formatDecimal(porRecibir,1,2)}">S/ 0.00</strong></span>
+          <span th:if="${porEntregar.signum() > 0}"><br th:if="${porRecibir.signum() > 0}" />Debes entregar a HogarFix <strong style="color:#dc2626;" th:text="${'S/ ' + #numbers.formatDecimal(porEntregar,1,2)}">S/ 0.00</strong> de comisión</span>
+          <span th:if="${porRecibir.signum() == 0 and porEntregar.signum() == 0}" style="color:var(--muted-foreground);">Estás al día ✓</span>
+        </p></div>
+    </div>
+
+    <div th:if="${#lists.isEmpty(filas)}" class="card text-sm" style="color:var(--muted-foreground);">
+      Todavía no tienes pagos. Aparecerán aquí cuando un cliente pague un servicio que terminaste.
+    </div>
+
+    <div th:if="${!#lists.isEmpty(filas)}" class="card overflow-x-auto p-0">
+      <table class="table-clean">
+        <thead>
+          <tr>
+            <th>Fecha</th><th>Servicio</th><th>Cliente</th><th>Cómo pagó</th>
+            <th>Monto cobrado</th><th>Comisión</th><th>Te queda</th><th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="f : ${filas}">
+            <td th:text="${f.fecha != null ? #temporals.format(f.fecha, 'dd/MM/yyyy HH:mm') : '-'}">01/01/2026</td>
+            <td th:text="${f.servicio}">Plomería</td>
+            <td th:text="${f.cliente}">Cliente</td>
+            <td th:text="${f.efectivo ? 'Efectivo' : (f.metodo == 'plin' ? 'Plin' : 'Yape')}">Yape</td>
+            <td th:text="${'S/ ' + #numbers.formatDecimal(f.monto,1,2)}">S/ 0.00</td>
+            <td style="color:#dc2626;" th:text="${'- S/ ' + #numbers.formatDecimal(f.comision,1,2)}">- S/ 0.00</td>
+            <td><strong th:text="${'S/ ' + #numbers.formatDecimal(f.neto,1,2)}">S/ 0.00</strong></td>
+            <td>
+              <span th:if="${f.estado == 'EN_REVISION'}" class="badge-soft" style="background:#dbeafe; color:#1e40af;">Verificando pago</span>
+              <th:block th:if="${f.estado == 'PENDIENTE_LIQ'}">
+                <span th:if="${f.efectivo}" class="badge-soft" style="background:#fee2e2; color:#991b1b;">Entrega la comisión</span>
+                <span th:unless="${f.efectivo}" class="badge-soft" style="background:#fef3c7; color:#92400e;">HogarFix te transferirá</span>
+              </th:block>
+              <th:block th:if="${f.estado == 'LIQUIDADO'}">
+                <span class="badge-soft" style="background:#dcfce7; color:#166534;"
+                      th:text="${f.efectivo ? 'Comisión entregada' : 'Transferido'}">Listo</span>
+              </th:block>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="text-xs mt-4" style="color:var(--muted-foreground);">
+      Pagos por Yape/Plin: el cliente le paga a HogarFix y te transferimos tu parte (monto menos comisión).
+      Pagos en efectivo: tú cobras todo y entregas a HogarFix solo la comisión.
+    </p>
+  </main>
+</body>
+</html>

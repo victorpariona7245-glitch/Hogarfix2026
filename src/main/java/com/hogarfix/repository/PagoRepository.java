@@ -24,6 +24,12 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
             + "WHERE p.estado = 'PAGADO' AND p.metodoPago = 'efectivo' AND p.comision IS NOT NULL AND (p.liquidado IS NULL OR p.liquidado = false)")
     java.util.List<Pago> findTodasComisionesPendientes();
 
+    /** Pagos de un técnico (cobrados o esperando verificación), del más reciente al más antiguo. */
+    @Query("SELECT p FROM Pago p JOIN FETCH p.servicio s LEFT JOIN FETCH s.categoria LEFT JOIN FETCH p.cliente "
+            + "WHERE s.tecnico.idTecnico = :idTecnico AND p.estado IN ('PAGADO', 'EN_REVISION') "
+            + "ORDER BY p.fechaPago DESC")
+    java.util.List<Pago> findPagosDeTecnico(@Param("idTecnico") Long idTecnico);
+
     boolean existsByCodigoOperacionAndIdPagoNot(String codigoOperacion, Long idPago);
 
     @Query("SELECT COALESCE(SUM(p.monto), 0) FROM Pago p " +
