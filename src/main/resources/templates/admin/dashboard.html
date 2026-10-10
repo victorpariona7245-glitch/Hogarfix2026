@@ -6,26 +6,158 @@
     <aside th:replace="~{fragments/admin-sidebar :: sidebar('dashboard')}"></aside>
 
     <div class="min-h-screen flex flex-col admin-main">
-      <main class="flex-1 container mx-auto px-4 py-12">
-        <h2 class="text-2xl font-medium text-center mb-8">Panel de Administración</h2>
+      <main class="flex-1 container mx-auto px-4 py-10">
+        <h2 class="text-2xl font-medium mb-1">Panel de Administración</h2>
+        <p class="text-sm mb-6" style="color: var(--muted-foreground);">Resumen de la actividad de HogarFix.</p>
 
-        <div class="grid md:grid-cols-3 gap-6 mb-12">
+        <!-- Números clave -->
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <div class="card text-center">
-            <h5 class="text-sm text-muted-foreground mb-2">Clientes</h5>
-            <p class="text-4xl font-semibold text-primary" th:text="${clientesCount}">0</p>
+            <h5 class="text-xs text-muted-foreground mb-1">Clientes</h5>
+            <p class="text-3xl font-semibold text-primary" th:text="${clientesCount}">0</p>
           </div>
           <div class="card text-center">
-            <h5 class="text-sm text-muted-foreground mb-2">Técnicos</h5>
-            <p class="text-4xl font-semibold" style="color:#16a34a" th:text="${tecnicosCount}">0</p>
+            <h5 class="text-xs text-muted-foreground mb-1">Técnicos</h5>
+            <p class="text-3xl font-semibold" style="color:#16a34a" th:text="${tecnicosCount}">0</p>
           </div>
           <div class="card text-center">
-            <h5 class="text-sm text-muted-foreground mb-2">Total Pagos</h5>
-            <p class="text-4xl font-semibold" style="color:#d97706" th:text="${totalPagos}">0</p>
+            <h5 class="text-xs text-muted-foreground mb-1">Solicitudes este mes</h5>
+            <p class="text-3xl font-semibold" style="color:#2a78d6" th:text="${solicitudesMes}">0</p>
+          </div>
+          <div class="card text-center">
+            <h5 class="text-xs text-muted-foreground mb-1">Servicios finalizados</h5>
+            <p class="text-3xl font-semibold" style="color:#16a34a" th:text="${finalizadas + ' / ' + solicitudesTotal}">0</p>
+          </div>
+          <div class="card text-center col-span-2 lg:col-span-1">
+            <h5 class="text-xs text-muted-foreground mb-1">Total pagos</h5>
+            <p class="text-3xl font-semibold" style="color:#d97706" th:text="${totalPagos}">0</p>
           </div>
         </div>
 
+        <!-- Solicitudes por mes -->
+        <section class="card mb-6">
+          <h3 class="text-base font-semibold">Solicitudes por mes</h3>
+          <p class="text-xs mb-3" style="color: var(--muted-foreground);">Últimos 12 meses</p>
+          <div style="position:relative; height:260px;"><canvas id="grafMes" role="img" aria-label="Solicitudes por mes"></canvas></div>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Especialidades -->
+          <section class="card">
+            <h3 class="text-base font-semibold">Especialidades más pedidas</h3>
+            <p class="text-xs mb-3" style="color: var(--muted-foreground);">Número de solicitudes (top 7)</p>
+            <p th:if="${#lists.isEmpty(datos.especialidades)}" class="text-sm" style="color:var(--muted-foreground);">Aún no hay solicitudes.</p>
+            <div th:if="${!#lists.isEmpty(datos.especialidades)}" style="position:relative; height:300px;">
+              <canvas id="grafEsp" role="img" aria-label="Especialidades más pedidas"></canvas>
+            </div>
+          </section>
+
+          <!-- Técnicos mejor calificados -->
+          <section class="card">
+            <h3 class="text-base font-semibold">Técnicos mejor calificados</h3>
+            <p class="text-xs mb-3" style="color: var(--muted-foreground);">Calificación promedio de 1 a 5 (top 5, con al menos una reseña)</p>
+            <p th:if="${#lists.isEmpty(datos.tecnicos)}" class="text-sm" style="color:var(--muted-foreground);">Aún no hay calificaciones.</p>
+            <div th:if="${!#lists.isEmpty(datos.tecnicos)}" style="position:relative; height:300px;">
+              <canvas id="grafTec" role="img" aria-label="Técnicos mejor calificados"></canvas>
+            </div>
+          </section>
+        </div>
+
+        <!-- Vista en tabla (accesible) -->
+        <details class="card mt-6">
+          <summary class="text-sm font-medium cursor-pointer">Ver los datos en tabla</summary>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+            <table class="table-clean">
+              <thead><tr><th>Mes</th><th>Solicitudes</th></tr></thead>
+              <tbody><tr th:each="p : ${datos.solicitudesPorMes}"><td th:text="${p.etiqueta}">oct 26</td><td th:text="${#numbers.formatInteger(p.valor,1)}">0</td></tr></tbody>
+            </table>
+            <table class="table-clean">
+              <thead><tr><th>Especialidad</th><th>Solicitudes</th></tr></thead>
+              <tbody><tr th:each="p : ${datos.especialidades}"><td th:text="${p.etiqueta}">Plomería</td><td th:text="${#numbers.formatInteger(p.valor,1)}">0</td></tr></tbody>
+            </table>
+            <table class="table-clean">
+              <thead><tr><th>Técnico</th><th>Promedio</th></tr></thead>
+              <tbody><tr th:each="p : ${datos.tecnicos}"><td th:text="${p.etiqueta}">Nombre</td><td th:text="${p.valor + ' (' + p.detalle + ')'}">5.0</td></tr></tbody>
+            </table>
+          </div>
+        </details>
       </main>
       <footer th:replace="~{fragments/footer :: footer}"></footer>
     </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script th:inline="javascript">
+      (function () {
+        if (!window.Chart) return;
+        var meses = /*[[${datos.solicitudesPorMes}]]*/ [];
+        var esp = /*[[${datos.especialidades}]]*/ [];
+        var tec = /*[[${datos.tecnicos}]]*/ [];
+
+        var AZUL = "#2a78d6", TEXTO = "#52514e", REJILLA = "rgba(0,0,0,.07)";
+        Chart.defaults.font.family = "Inter, system-ui, sans-serif";
+        Chart.defaults.color = TEXTO;
+
+        function el(id) { return document.getElementById(id); }
+        function etiquetas(a) { return a.map(function (p) { return p.etiqueta; }); }
+        function valores(a) { return a.map(function (p) { return p.valor; }); }
+        function dataset(a) {
+          return [{ data: valores(a), backgroundColor: AZUL, borderRadius: 4, borderSkipped: "start", maxBarThickness: 28 }];
+        }
+        var opcionesBase = {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } }
+        };
+
+        // Solicitudes por mes (columnas)
+        if (el("grafMes")) {
+          new Chart(el("grafMes"), {
+            type: "bar",
+            data: { labels: etiquetas(meses), datasets: dataset(meses) },
+            options: Object.assign({}, opcionesBase, {
+              plugins: { legend: { display: false },
+                tooltip: { callbacks: { label: function (c) { return c.parsed.y + (c.parsed.y === 1 ? " solicitud" : " solicitudes"); } } } },
+              scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: REJILLA } }
+              }
+            })
+          });
+        }
+
+        // Especialidades (barras horizontales)
+        if (el("grafEsp")) {
+          new Chart(el("grafEsp"), {
+            type: "bar",
+            data: { labels: etiquetas(esp), datasets: dataset(esp) },
+            options: Object.assign({}, opcionesBase, {
+              indexAxis: "y",
+              plugins: { legend: { display: false },
+                tooltip: { callbacks: { label: function (c) { return c.parsed.x + (c.parsed.x === 1 ? " solicitud" : " solicitudes"); } } } },
+              scales: {
+                x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: REJILLA } },
+                y: { grid: { display: false } }
+              }
+            })
+          });
+        }
+
+        // Técnicos mejor calificados (barras horizontales, escala 0-5)
+        if (el("grafTec")) {
+          new Chart(el("grafTec"), {
+            type: "bar",
+            data: { labels: etiquetas(tec), datasets: dataset(tec) },
+            options: Object.assign({}, opcionesBase, {
+              indexAxis: "y",
+              plugins: { legend: { display: false },
+                tooltip: { callbacks: { label: function (c) { return "★ " + c.parsed.x + " (" + tec[c.dataIndex].detalle + ")"; } } } },
+              scales: {
+                x: { min: 0, max: 5, ticks: { stepSize: 1 }, grid: { color: REJILLA } },
+                y: { grid: { display: false } }
+              }
+            })
+          });
+        }
+      })();
+    </script>
   </body>
 </html>

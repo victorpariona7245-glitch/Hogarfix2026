@@ -34,6 +34,7 @@ public class AdminController {
         private final UsuarioRepository usuarioRepository;
         private final PasswordEncoder passwordEncoder;
         private final AuditoriaService auditoriaService;
+        private final com.hogarfix.service.DashboardService dashboardService;
 
         @GetMapping("/dashboard")
         public String dashboard(Model model, Principal principal) {
@@ -71,6 +72,12 @@ public class AdminController {
                                 .filter(t -> t.getUsuario() == null || !Boolean.TRUE.equals(t.getUsuario().getIsActivo()))
                                 .count();
                 model.addAttribute("certificadosPendientesCount", pendientesCount);
+
+                var datos = dashboardService.calcular();
+                model.addAttribute("datos", datos);
+                model.addAttribute("solicitudesMes", datos.solicitudesMes());
+                model.addAttribute("solicitudesTotal", datos.solicitudesTotal());
+                model.addAttribute("finalizadas", datos.finalizadas());
 
                 return "admin/dashboard";
         }
