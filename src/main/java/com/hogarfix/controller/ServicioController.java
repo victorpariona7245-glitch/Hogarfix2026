@@ -30,6 +30,7 @@ public class ServicioController {
     private final com.hogarfix.service.ServicioService servicioServiceInternal;
     private final com.hogarfix.service.PagoService pagoService;
     private final com.hogarfix.service.EmailService emailService;
+    private final com.hogarfix.service.MaterialService materialService;
 
     @GetMapping
     public String listarServicios(Model model) {
@@ -294,6 +295,9 @@ public class ServicioController {
     @PostMapping("/{id}/finalizar")
     public String finalizarSolicitud(@PathVariable("id") Long id,
                                      @RequestParam(value = "monto", required = false) BigDecimal montoCobrado,
+                                     @RequestParam(value = "matDesc", required = false) java.util.List<String> matDesc,
+                                     @RequestParam(value = "matPrecio", required = false) java.util.List<BigDecimal> matPrecio,
+                                     @RequestParam(value = "matFoto", required = false) java.util.List<org.springframework.web.multipart.MultipartFile> matFoto,
                                      Principal principal) {
         if (principal == null) return "redirect:/auth/login";
         var servOpt = servicioService.buscarPorId(id);
@@ -316,17 +320,36 @@ public class ServicioController {
         }
         montoCobrado = montoCobrado.setScale(2, java.math.RoundingMode.HALF_UP);
 
+        // Materiales comprados por el técnico (cada uno con su comprobante): se suman al total
+        java.util.List<com.hogarfix.service.MaterialService.Preparado> materiales;
+        try {
+            materiales = materialService.preparar(matDesc, matPrecio, matFoto);
+        } catch (IllegalStateException ex) {
+            return "redirect:/tecnicos/panel?error=materiales&msg="
+                    + java.net.URLEncoder.encode(ex.getMessage(), java.nio.charset.StandardCharsets.UTF_8);
+        }
+        BigDecimal totalCobrado = montoCobrado.add(com.hogarfix.service.MaterialService.totalPreparados(materiales));
+        if (totalCobrado.compareTo(BigDecimal.valueOf(8000)) > 0) {
+            return "redirect:/tecnicos/panel?error=materiales&msg="
+                    + java.net.URLEncoder.encode("El total no puede pasar de S/ 8000", java.nio.charset.StandardCharsets.UTF_8);
+        }
+        if (!materiales.isEmpty()) {
+            if (!"EN_PROCESO".equalsIgnoreCase(s.getEstado())) return "redirect:/tecnicos/panel?error=transicion";
+            materialService.guardar(s, materiales);
+        }
+
         java.util.Optional<Servicio> updatedOpt;
         try {
             updatedOpt = servicioServiceInternal.marcarFinalizado(id);
         } catch (IllegalStateException ex) {
+            materialService.borrarDeServicio(id);
             return "redirect:/tecnicos/panel?error=transicion";
         }
         if (updatedOpt.isPresent()) {
             var updated = updatedOpt.get();
             try {
                 // crear pago pendiente para el cliente con el monto que fijó el técnico
-                java.math.BigDecimal monto = montoCobrado;
+                java.math.BigDecimal monto = totalCobrado; // mano de obra + materiales
                 updated.setMonto(monto);
                 servicioServiceInternal.registrarServicio(updated);
                 String metodoElegido = (updated.getMetodoPagoPreferido() != null

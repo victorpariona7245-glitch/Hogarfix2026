@@ -38,6 +38,7 @@ public class BoletaController {
     private final PagoRepository pagoRepository;
     private final PagoService pagoService;
     private final ClienteService clienteService;
+    private final com.hogarfix.service.MaterialService materialService;
     private final java.util.concurrent.ConcurrentHashMap<Long, Long> ultimosEnvios = new java.util.concurrent.ConcurrentHashMap<>();
 
     // Datos opcionales de la empresa (variables de entorno en Railway)
@@ -122,6 +123,9 @@ public class BoletaController {
                 cliente, tecnico, categoria, s.getDescripcion(), s.getDireccionServicio(),
                 metodoTexto(p.getMetodoPago()), p.getMonto(), pagado));
         model.addAttribute("idServicio", idServicio);
+        var materiales = materialService.listar(idServicio);
+        model.addAttribute("materiales", materiales);
+        model.addAttribute("manoObra", p.getMonto().subtract(com.hogarfix.service.MaterialService.total(materiales)));
         model.addAttribute("ruc", empresaRuc);
         model.addAttribute("direccion", empresaDireccion);
         model.addAttribute("telefono", empresaTelefono);

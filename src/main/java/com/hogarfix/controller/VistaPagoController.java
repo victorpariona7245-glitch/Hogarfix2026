@@ -25,6 +25,7 @@ public class VistaPagoController {
 
     private final PagoService pagoService;
     private final ClienteService clienteService;
+    private final com.hogarfix.service.MaterialService materialService;
     private static final Logger logger = LoggerFactory.getLogger(VistaPagoController.class);
 
     // Datos para recibir pagos por Yape/Plin (se configuran en Railway, nunca en el código)
@@ -84,6 +85,18 @@ public class VistaPagoController {
             }).toList();
         }
         model.addAttribute("pagos", pagosDto);
+        // Detalle del cobro: materiales (con comprobante) y mano de obra de cada servicio
+        var materialesPorServicio = new java.util.HashMap<Long, java.util.List<com.hogarfix.repository.ServicioMaterialRepository.MaterialResumen>>();
+        var manoObraPorServicio = new java.util.HashMap<Long, java.math.BigDecimal>();
+        for (var p : pagosDto) {
+            if (p.getIdServicio() == null) continue;
+            var mats = materialService.listar(p.getIdServicio());
+            if (mats.isEmpty()) continue;
+            materialesPorServicio.put(p.getIdServicio(), mats);
+            manoObraPorServicio.put(p.getIdServicio(), p.getMonto().subtract(com.hogarfix.service.MaterialService.total(mats)));
+        }
+        model.addAttribute("materialesPorServicio", materialesPorServicio);
+        model.addAttribute("manoObraPorServicio", manoObraPorServicio);
         model.addAttribute("cliente", cliente);
         model.addAttribute("yapeConfigurado", yapeNumero != null && !yapeNumero.isBlank());
         model.addAttribute("yapeNumero", yapeNumero);

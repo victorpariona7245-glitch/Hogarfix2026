@@ -94,7 +94,8 @@
         <span th:if="${param.error[0] == 'comision'}">No puedes aceptar solicitudes nuevas porque tienes comisión vencida por entregar a HogarFix. Ponte al día con el administrador y se desbloqueará.</span>
         <span th:if="${param.error[0] == 'monto'}">Ingresa un monto válido, entre S/ 10 y S/ 5000.</span>
         <span th:if="${param.error[0] == 'transicion'}">Esa acción ya no es posible para esta solicitud.</span>
-        <span th:if="${param.error[0] != 'comision' and param.error[0] != 'monto' and param.error[0] != 'transicion'}">No se pudo completar la acción.</span>
+        <span th:if="${param.error[0] == 'materiales'}" th:text="${param.msg != null ? param.msg[0] : 'Revisa los materiales y sus comprobantes.'}">Revisa los materiales</span>
+        <span th:if="${param.error[0] != 'comision' and param.error[0] != 'monto' and param.error[0] != 'transicion' and param.error[0] != 'materiales'}">No se pudo completar la acción.</span>
       </div>
     </div>
 
@@ -424,32 +425,9 @@
                           onclick="abrirChatFlotante(this.dataset.servicioId, this.dataset.nombre)">💬 Chat</button>
                       </div>
                       <div th:case="'EN_PROCESO'">
-                        <form
-                          th:action="@{/servicios/{id}/finalizar(id=${s.idServicio})}"
-                          data-confirm="Se le cobrará al cliente el monto que indicaste." data-confirm-titulo="¿Terminar el servicio?" data-confirm-ok="Sí, terminar"
-                          method="post"
-                          style="display: inline"
-                        >
-                          <input
-                            type="hidden"
-                            th:if="${_csrf != null}"
-                            th:name="${_csrf.parameterName}"
-                            th:value="${_csrf.token}"
-                          />
-                          <input
-                            type="number" name="monto" min="10" max="5000" step="0.50" required
-                            placeholder="Monto S/"
-                            title="Cuánto cobras por este servicio (S/ 10 a S/ 5000)"
-                            class="border rounded p-1 text-xs" style="width: 90px; border-color: var(--border);"
-                          />
-                          <button
-                            type="submit"
-                            class="px-2 py-1 rounded text-white text-xs font-medium"
-                            style="background-color: var(--primary);"
-                          >
-                            Terminar
-                          </button>
-                        </form>
+                        <button type="button" class="px-2 py-1 rounded text-white text-xs font-medium"
+                                style="background-color: var(--primary);"
+                                th:attr="data-id=${s.idServicio}" onclick="abrirTerminar(this)">Terminar servicio</button>
                         <button
                           type="button"
                           class="px-2 py-1 rounded text-xs font-medium border chat-trigger"
@@ -904,6 +882,118 @@
       💬
     </button>
   </div>
+
+  <!-- Terminar servicio: mano de obra + materiales con comprobante -->
+  <div id="modal-terminar" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:300; align-items:flex-start; justify-content:center; padding:16px; overflow-y:auto;">
+    <form id="form-terminar" method="post" enctype="multipart/form-data" autocomplete="off"
+          style="background:#fff; border-radius:14px; max-width:560px; width:100%; padding:20px; margin:auto;">
+      <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+      <h3 class="text-lg font-medium mb-1">Terminar servicio</h3>
+      <p class="text-sm mb-4" style="color: var(--muted-foreground);">
+        Indica tu mano de obra. Si compraste materiales para este trabajo, agrégalos con la captura o foto del comprobante: se suman al total que paga el cliente.
+      </p>
+
+      <label class="form-label" for="tm-monto">Tu mano de obra (S/)</label>
+      <input type="number" id="tm-monto" name="monto" min="10" max="5000" step="0.50" required class="form-input" placeholder="Ej. 60" oninput="calcularTotalTerminar()" />
+
+      <div class="flex items-center justify-between mt-4 mb-2">
+        <p class="form-label" style="margin:0;">Materiales que compraste (opcional)</p>
+        <button type="button" id="tm-agregar" class="btn-outline btn-sm" onclick="agregarMaterial()">+ Agregar material</button>
+      </div>
+      <div id="tm-materiales" class="space-y-3"></div>
+      <p class="form-hint">Cada material necesita su comprobante (captura de Yape/Plin, boleta o foto del ticket).</p>
+
+      <div class="flex justify-between items-center mt-4 p-3 rounded-lg" style="background:#f1f5f9;">
+        <span class="text-sm">Total que pagará el cliente</span>
+        <strong id="tm-total">S/ 0.00</strong>
+      </div>
+
+      <div class="flex gap-3 mt-4" style="justify-content:flex-end;">
+        <button type="button" class="btn-outline" onclick="cerrarTerminar()">Cancelar</button>
+        <button type="submit" id="tm-enviar" class="btn-primary">Terminar y cobrar</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    var modalTerminar = document.getElementById('modal-terminar');
+    var formTerminar = document.getElementById('form-terminar');
+    var filasMaterial = 0;
+
+    function abrirTerminar(btn) {
+      formTerminar.setAttribute('action', '/servicios/' + btn.dataset.id + '/finalizar');
+      formTerminar.reset();
+      document.getElementById('tm-materiales').innerHTML = '';
+      filasMaterial = 0;
+      document.getElementById('tm-agregar').disabled = false;
+      document.getElementById('tm-enviar').disabled = false;
+      calcularTotalTerminar();
+      modalTerminar.style.display = 'flex';
+    }
+    function cerrarTerminar() { modalTerminar.style.display = 'none'; }
+
+    function agregarMaterial() {
+      if (filasMaterial >= 8) return;
+      filasMaterial++;
+      var fila = document.createElement('div');
+      fila.className = 'p-3 rounded-lg';
+      fila.style.cssText = 'border:1px solid var(--border); background:#fafbfd;';
+      fila.innerHTML =
+        '<div class="grid grid-cols-5 gap-2">' +
+        '<input type="text" name="matDesc" maxlength="120" required placeholder="Material (ej. llave de paso)" class="form-input col-span-3" />' +
+        '<input type="number" name="matPrecio" min="0.5" max="3000" step="0.01" required placeholder="S/" class="form-input col-span-2" oninput="calcularTotalTerminar()" />' +
+        '</div>' +
+        '<div class="flex items-center gap-2 mt-2">' +
+        '<input type="file" name="matFoto" accept="image/*" required class="text-xs" style="flex:1; min-width:0;" onchange="comprimirImagen(this)" />' +
+        '<button type="button" class="text-xs underline" style="color:#dc2626;" onclick="quitarMaterial(this)">Quitar</button>' +
+        '</div>';
+      document.getElementById('tm-materiales').appendChild(fila);
+      if (filasMaterial >= 8) document.getElementById('tm-agregar').disabled = true;
+    }
+    function quitarMaterial(b) {
+      b.closest('.p-3').remove();
+      filasMaterial--;
+      document.getElementById('tm-agregar').disabled = false;
+      calcularTotalTerminar();
+    }
+    function calcularTotalTerminar() {
+      var t = parseFloat(document.getElementById('tm-monto').value) || 0;
+      document.querySelectorAll('#tm-materiales input[name="matPrecio"]').forEach(function (i) { t += parseFloat(i.value) || 0; });
+      document.getElementById('tm-total').textContent = 'S/ ' + t.toFixed(2);
+    }
+
+    // Reduce la imagen en el celular antes de subirla (más rápido y gasta menos datos)
+    function comprimirImagen(input) {
+      var f = input.files && input.files[0];
+      if (!f || !f.type.startsWith('image/') || !window.DataTransfer) return;
+      var img = new Image();
+      var url = URL.createObjectURL(f);
+      img.onload = function () {
+        var esc = Math.min(1, 1400 / Math.max(img.width, img.height));
+        var c = document.createElement('canvas');
+        c.width = Math.round(img.width * esc); c.height = Math.round(img.height * esc);
+        var ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        c.toBlob(function (blob) {
+          URL.revokeObjectURL(url);
+          if (!blob) return;
+          var dt = new DataTransfer();
+          dt.items.add(new File([blob], 'comprobante.jpg', { type: 'image/jpeg' }));
+          input.files = dt.files;
+        }, 'image/jpeg', 0.8);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); };
+      img.src = url;
+    }
+
+    formTerminar.addEventListener('submit', function () {
+      document.getElementById('tm-enviar').disabled = true;
+      document.getElementById('tm-enviar').textContent = 'Enviando…';
+    });
+    modalTerminar.addEventListener('click', function (e) { if (e.target === modalTerminar) cerrarTerminar(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrarTerminar(); });
+  </script>
 <script src="/js/confirmar.js"></script>
   <script src="/js/responsive.js"></script>
   <script src="/js/disputa.js"></script>

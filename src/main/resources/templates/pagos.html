@@ -66,6 +66,23 @@
             <div class="w-full p-3 rounded-md border border-slate-200 bg-slate-50 font-semibold" th:text="${pago != null ? ('S/ ' + pago.monto) : 'S/ 0.00'}">S/ 0.00</div>
           </div>
 
+          <!-- Detalle del cobro cuando hay materiales -->
+          <div th:if="${pago != null and materialesPorServicio.get(pago.idServicio) != null}" class="p-4 rounded-md text-sm" style="border:1px solid #cbd5e1; background:#fff;">
+            <p class="font-semibold mb-2">Detalle del cobro</p>
+            <div class="flex justify-between py-1">
+              <span>Mano de obra</span>
+              <span class="whitespace-nowrap" th:text="${'S/ ' + #numbers.formatDecimal(manoObraPorServicio.get(pago.idServicio), 1, 2)}">S/ 0.00</span>
+            </div>
+            <div th:each="m : ${materialesPorServicio.get(pago.idServicio)}" class="flex justify-between items-center gap-3 py-1" style="border-top:1px dashed #e2e8f0;">
+              <span>
+                <span th:text="${m.descripcion}">Material</span>
+                <a th:href="@{/materiales/{id}/comprobante(id=${m.idMaterial})}" target="_blank" rel="noopener" class="underline text-xs ml-1" style="color:#2563eb;">ver comprobante</a>
+              </span>
+              <span class="whitespace-nowrap" th:text="${'S/ ' + #numbers.formatDecimal(m.precio, 1, 2)}">S/ 0.00</span>
+            </div>
+            <p class="text-xs mt-2" style="color:#64748b;">Los materiales son lo que el técnico compró para tu servicio. Si algo no cuadra, repórtalo desde tu perfil antes de pagar.</p>
+          </div>
+
           <div th:if="${mensajeError}" class="p-4 rounded-md text-sm" style="background:#fee2e2; color:#991b1b;">
             <span th:text="${mensajeError}">Ocurrió un error</span>
           </div>

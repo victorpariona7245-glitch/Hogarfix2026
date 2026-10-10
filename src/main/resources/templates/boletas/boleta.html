@@ -90,8 +90,17 @@
         <div>
           <strong th:text="${b.categoria}">Plomería</strong>
           <div style="color:var(--muted); font-size:13px; margin-top:2px;" th:text="${b.descripcion}">Descripción del servicio</div>
+          <div th:if="${!#lists.isEmpty(materiales)}" style="color:var(--muted); font-size:12px; margin-top:2px;">Mano de obra</div>
         </div>
-        <div style="white-space:nowrap;" th:text="${'S/ ' + #numbers.formatDecimal(b.monto, 1, 2)}">S/ 0.00</div>
+        <div style="white-space:nowrap;"
+             th:text="${'S/ ' + #numbers.formatDecimal(#lists.isEmpty(materiales) ? b.monto : manoObra, 1, 2)}">S/ 0.00</div>
+      </div>
+      <div class="fila" th:each="m : ${materiales}">
+        <div>
+          <span th:text="${m.descripcion}">Material</span>
+          <div style="color:var(--muted); font-size:12px;">Material comprado por el técnico</div>
+        </div>
+        <div style="white-space:nowrap;" th:text="${'S/ ' + #numbers.formatDecimal(m.precio, 1, 2)}">S/ 0.00</div>
       </div>
       <div class="fila total">
         <span>Total</span>
