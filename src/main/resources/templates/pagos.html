@@ -7,10 +7,11 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link href="/css/styles.css" rel="stylesheet">
+  <link href="/css/responsive.css" rel="stylesheet" />
   <meta th:if="${_csrf != null}" name="_csrf" th:content="${_csrf.token}" />
   <meta th:if="${_csrf != null}" name="_csrf_header" th:content="${_csrf.headerName}" />
   <style>
-    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;margin:24px;background:#f8fafc;color:#0f172a}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;margin:0;padding:24px;background:#f8fafc;color:#0f172a}
     .glass{background:rgba(255,255,255,0.9);backdrop-filter:blur(6px);border-radius:16px}
     .spinner{border:3px solid rgba(0,0,0,0.06);border-top-color:var(--primary);border-radius:999px;width:14px;height:14px;animation:spin .9s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
@@ -18,7 +19,8 @@
     .text-danger{color:#dc2626}
     .toast{position:fixed;right:20px;bottom:20px;background:#16a34a;color:white;padding:10px 14px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.12);display:flex;align-items:center;gap:8px}
     @media (max-width: 640px) {
-      body { margin: 12px; }
+      body { padding: 14px; }
+      #svcCost { white-space: nowrap; }
       .toast { left: 12px; right: 12px; bottom: 12px; }
     }
   </style>
@@ -27,7 +29,7 @@
   <main class="max-w-6xl mx-auto grid gap-6 grid-cols-1 lg:grid-cols-3 items-start" th:with="pago=${#lists.isEmpty(pagos) ? null : pagos[0]}">
     <!-- MAIN -->
     <section class="lg:col-span-2 space-y-6">
-      <header class="flex items-center justify-between">
+      <header class="flex items-center justify-between gap-3" style="position:static;border:0;background:none;">
         <div>
           <h1 class="text-2xl font-semibold text-slate-800">HogarFix · Pagos</h1>
           <p class="text-sm text-slate-500 mt-1">Paga tu servicio</p>
@@ -38,8 +40,8 @@
         </div>
       </header>
 
-      <section class="glass p-6 bg-white rounded-lg shadow">
-        <div class="flex items-start justify-between gap-4">
+      <section class="glass p-4 sm:p-6 bg-white rounded-lg shadow">
+        <div class="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 class="text-lg font-semibold text-slate-800">Formulario de pago</h2>
             <p class="text-sm text-slate-500 mt-1">
@@ -74,6 +76,7 @@
           <!-- Ya pagado -->
           <div th:if="${pago != null and pago.estado == 'PAGADO'}" class="p-4 rounded-md text-sm" style="background:#dcfce7; color:#166534;">
             ✓ Este servicio ya está pagado. ¡Gracias por confiar en HogarFix!
+            <a th:href="@{/boletas/{id}(id=${pago.idServicio})}" class="btn-primary inline-block text-center ml-2" style="padding:6px 12px;">🧾 Ver boleta</a>
           </div>
 
           <!-- Comprobante Yape/Plin en revisión -->
@@ -175,5 +178,6 @@
     </aside>
   </main>
 <script src="/js/confirmar.js"></script>
+<script src="/js/responsive.js"></script>
 </body>
 </html>

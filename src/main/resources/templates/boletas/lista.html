@@ -5,10 +5,10 @@
   <header class="w-full bg-white border-b sticky top-0 z-50" style="border-color: var(--border);">
     <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
       <a href="/" class="text-2xl font-medium text-primary">HogarFix</a>
-      <div class="flex items-center space-x-3">
+      <div class="hdr-actions">
         <a th:href="@{/clientes/perfil}" class="btn-outline btn-sm">← Mi perfil</a>
         <form th:action="@{/logout}" method="post">
-          <button type="submit" class="btn-outline btn-sm">Cerrar sesión</button>
+          <button type="submit" class="btn-outline btn-sm"><span class="lbl-full">Cerrar sesión</span><span class="lbl-short">Salir</span></button>
         </form>
       </div>
     </div>
@@ -38,5 +38,7 @@
       </table>
     </div>
   </main>
+<link href="/css/responsive.css" rel="stylesheet" />
+<script src="/js/responsive.js"></script>
 </body>
 </html>

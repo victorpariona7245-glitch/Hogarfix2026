@@ -1,0 +1,53 @@
+/* HogarFix - ajustes de diseño para celular y PC */
+html, body { overflow-x: hidden; }
+img { max-width: 100%; }
+
+/* Cabecera */
+.hdr-actions { display: flex; align-items: center; gap: 10px; }
+.hdr-actions .btn-outline.btn-sm { white-space: nowrap; }
+.lbl-short { display: none; }
+
+/* Acciones de cada solicitud (botones en una sola fila ordenada) */
+.acciones > div { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.acciones br { display: none; }
+.acciones form { display: inline-flex !important; align-items: center; gap: 6px; margin: 0 !important; }
+.acciones button { min-height: 32px; padding: 6px 12px !important; font-size: 12px !important; border-radius: 8px !important; margin: 0 !important; white-space: nowrap; }
+.acciones button.border { background: #fff; }
+.acciones input[name="monto"] { height: 32px; width: 100px !important; padding: 0 8px !important; }
+.col-acciones { min-width: 240px; }
+.td-v { min-width: 0; }
+
+/* Botón flotante del chat */
+#chat-widget-burbuja { font-size: 24px; line-height: 1; }
+#chat-widget { right: 16px !important; bottom: 16px !important; }
+
+@media (max-width: 640px) {
+  header.sticky > div { padding-left: 12px !important; padding-right: 12px !important; padding-top: 10px !important; padding-bottom: 10px !important; }
+  header.sticky a.text-2xl { font-size: 1.25rem; }
+  .hdr-actions { gap: 6px; }
+  .hdr-actions .btn-sm { padding: 0.4rem 0.65rem; font-size: 0.75rem; }
+  .lbl-full { display: none; }
+  .lbl-short { display: inline; }
+
+  main { padding-left: 12px !important; padding-right: 12px !important; }
+  .card { padding: 14px; }
+
+  /* La campana: panel a lo ancho de la pantalla, sin cortarse */
+  #campana-panel { position: fixed !important; left: 8px !important; right: 8px !important; top: 58px !important; width: auto !important; max-width: none !important; }
+
+  /* Tablas -> tarjetas apiladas */
+  .table-clean, .table-clean tbody, .table-clean tr, .table-clean td { display: block; width: 100%; }
+  .table-clean thead { display: none; }
+  .table-clean tr { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 8px 12px; margin-bottom: 12px; }
+  .table-clean tbody tr:hover { background: #fff; }
+  .table-clean td { display: grid; grid-template-columns: 92px 1fr; gap: 8px; border-bottom: 1px dashed var(--border); padding: 8px 0 !important; word-break: break-word; }
+  .table-clean td:last-child { border-bottom: 0; }
+  .table-clean td::before { content: attr(data-label); font-size: 12px; font-weight: 600; color: var(--muted-foreground); padding-top: 2px; }
+  .table-clean td[data-label=""] { grid-template-columns: 1fr; }
+  .table-clean td[data-label=""]::before { display: none; }
+  .col-acciones { min-width: 0; }
+  .acciones button { flex: 1 1 auto; }
+  .overflow-x-auto { overflow-x: visible; }
+
+  .toast { left: 12px !important; right: 12px !important; bottom: 12px !important; }
+}

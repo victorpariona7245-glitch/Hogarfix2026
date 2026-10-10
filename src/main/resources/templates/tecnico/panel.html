@@ -24,6 +24,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="/css/styles.css" rel="stylesheet" />
+    <link href="/css/responsive.css" rel="stylesheet" />
     <style>
       body { font-family: "Inter", sans-serif; }
       .swal-label {
@@ -73,15 +74,15 @@
         class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between"
       >
         <a href="/" class="text-2xl font-medium text-primary">HogarFix</a>
-        <div class="flex items-center space-x-3">
+        <div class="hdr-actions">
           <div th:replace="~{fragments/notificaciones :: campana}"></div>
-          <a th:href="@{/tecnicos/pagos}" class="btn-outline btn-sm">💰 Mis pagos</a>
+          <a th:href="@{/tecnicos/pagos}" class="btn-outline btn-sm">💰 <span class="lbl-full">Mis pagos</span></a>
           <form th:action="@{/logout}" method="post">
             <button
               type="submit"
               class="btn-outline btn-sm"
             >
-              Cerrar sesión
+              <span class="lbl-full">Cerrar sesión</span><span class="lbl-short">Salir</span>
             </button>
           </form>
         </div>
@@ -322,14 +323,14 @@
                   <td th:text="${s.urgencia != null ? s.urgencia : '-'}">media</td>
                   <td>
                     <span th:if="${s.metodoPagoPreferido == 'efectivo'}" class="badge-soft" style="background:#dcfce7; color:#166534;">Efectivo</span>
-                    <span th:if="${s.metodoPagoPreferido != 'efectivo'}" class="badge-soft" style="background:#dbeafe; color:#1e40af;">Tarjeta</span>
+                    <span th:if="${s.metodoPagoPreferido != 'efectivo'}" class="badge-soft" style="background:#dbeafe; color:#1e40af;">Yape / Plin</span>
                     <div th:if="${s.estado == 'FINALIZADO'}" style="margin-top:4px;">
                       <span th:if="${pagoEstados.get(s.idServicio) == 'PAGADO'}" class="badge-soft" style="background:#dcfce7; color:#166534; font-size:0.75em;">✓ Pagado</span>
                       <span th:if="${pagoEstados.get(s.idServicio) == 'EN_REVISION'}" class="badge-soft" style="background:#dbeafe; color:#1e40af; font-size:0.75em;">HogarFix verifica el pago</span>
                       <span th:if="${pagoEstados.get(s.idServicio) != 'EN_REVISION' and pagoEstados.get(s.idServicio) != 'PAGADO'}" class="badge-soft" style="background:#fef3c7; color:#92400e; font-size:0.75em;">Pago pendiente</span>
                     </div>
                   </td>
-                  <td>
+                  <td class="col-acciones">
                     <div class="mb-2">
                       <span class="badge-soft" th:text="${#strings.replace(s.estado, '_', ' ')}">PENDIENTE</span>
                       <button type="button" class="text-xs underline" style="margin-left:6px; color: var(--muted-foreground);"
@@ -337,7 +338,7 @@
                     </div>
 
                     <!-- Acciones según estado -->
-                    <div th:switch="${s.estado}">
+                    <div class="acciones" th:switch="${s.estado}">
                       <div th:case="'PENDIENTE'">
                         <form
                           th:action="@{/servicios/{id}/aceptar(id=${s.idServicio})}"
@@ -895,9 +896,10 @@
     <button type="button" id="chat-widget-burbuja" onclick="toggleChatFlotante()"
             class="hidden rounded-full shadow-lg items-center justify-center"
             style="width:56px; height:56px; background: var(--primary); color: var(--primary-foreground); display:flex;">
-      <i data-lucide="message-circle" class="w-6 h-6"></i>
+      💬
     </button>
   </div>
 <script src="/js/confirmar.js"></script>
-  </body>
+  <script src="/js/responsive.js"></script>
+</body>
 </html>
