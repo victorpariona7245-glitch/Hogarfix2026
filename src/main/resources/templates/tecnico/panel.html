@@ -753,135 +753,32 @@
     <script>
       lucide.createIcons();
     </script>
-  <script>
-    // --- Chat flotante técnico ↔ cliente (polling cada 4 segundos) ---
-    let chatActivoId = null;
-    let chatIntervalo = null;
 
-    function escapeHtml(texto) {
-      const div = document.createElement('div');
-      div.textContent = texto;
-      return div.innerHTML;
-    }
-
-    function renderMensajesFlotante(mensajes) {
-      const contenedor = document.getElementById('chat-widget-mensajes');
-      if (!contenedor) return;
-      if (!mensajes.length) {
-        contenedor.innerHTML = '<p style="font-size:12px; color:#94a3b8; text-align:center; margin-top:16px;">Aún no hay mensajes. ¡Escribe el primero!</p>';
-        return;
-      }
-      contenedor.innerHTML = mensajes.map(m => {
-        const esMio = m.autor === 'TECNICO';
-        const alineacion = esMio ? 'justify-content:flex-end;' : 'justify-content:flex-start;';
-        const color = esMio ? 'background:#030213; color:#fff;' : 'background:#e5e7eb; color:#111;';
-        return '<div style="display:flex; ' + alineacion + ' margin-bottom:6px;">' +
-          '<div style="max-width:75%; padding:6px 10px; border-radius:10px; font-size:13px; ' + color + '">' +
-          escapeHtml(m.contenido) +
-          '<div style="font-size:10px; opacity:0.7; margin-top:2px;">' + m.fecha + '</div>' +
-          '</div></div>';
-      }).join('');
-      contenedor.scrollTop = contenedor.scrollHeight;
-    }
-
-    async function cargarMensajesFlotante() {
-      if (!chatActivoId) return;
-      try {
-        const res = await fetch('/api/mensajes/' + chatActivoId, { credentials: 'same-origin' });
-        if (!res.ok) return;
-        const mensajes = await res.json();
-        renderMensajesFlotante(mensajes);
-      } catch (e) {
-        console.warn('No se pudo cargar el chat:', e);
-      }
-    }
-
-    function abrirChatFlotante(idServicio, nombreContacto) {
-      chatActivoId = idServicio;
-      document.getElementById('chat-widget-titulo').textContent = nombreContacto || 'Chat';
-      document.getElementById('chat-widget-mensajes').innerHTML = '';
-      document.getElementById('chat-widget-panel').classList.remove('hidden');
-      document.getElementById('chat-widget-burbuja').classList.add('hidden');
-      cargarMensajesFlotante();
-
-      if (chatIntervalo) clearInterval(chatIntervalo);
-      chatIntervalo = setInterval(cargarMensajesFlotante, 4000);
-
-      document.getElementById('chat-widget-input').focus();
-    }
-
-    function minimizarChatFlotante() {
-      document.getElementById('chat-widget-panel').classList.add('hidden');
-      document.getElementById('chat-widget-burbuja').classList.remove('hidden');
-    }
-
-    function toggleChatFlotante() {
-      const panel = document.getElementById('chat-widget-panel');
-      if (panel.classList.contains('hidden')) {
-        panel.classList.remove('hidden');
-        document.getElementById('chat-widget-burbuja').classList.add('hidden');
-        if (chatActivoId) cargarMensajesFlotante();
-      } else {
-        minimizarChatFlotante();
-      }
-    }
-
-    async function enviarMensajeChatFlotante() {
-      if (!chatActivoId) return;
-      const input = document.getElementById('chat-widget-input');
-      const contenido = input.value.trim();
-      if (!contenido) return;
-
-      try {
-        const res = await fetch('/api/mensajes/' + chatActivoId, {
-          method: 'POST',
-          headers: csrfHeaders({ 'Content-Type': 'application/json' }),
-          credentials: 'same-origin',
-          body: JSON.stringify({ contenido }),
-        });
-        if (res.ok) {
-          input.value = '';
-          cargarMensajesFlotante();
-        }
-      } catch (e) {
-        console.warn('No se pudo enviar el mensaje:', e);
-      }
-    }
-
-    document.getElementById('chat-widget-input')?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        enviarMensajeChatFlotante();
-      }
-    });
-  </script>
-
-  <!-- Widget de chat flotante -->
-  <div id="chat-widget" class="fixed bottom-5 right-5 z-50 flex flex-col items-end">
-    <div id="chat-widget-panel" class="hidden mb-3 w-80 max-w-[88vw] bg-white rounded-2xl shadow-xl border overflow-hidden" style="border-color: var(--border);">
-      <div class="flex items-center justify-between px-4 py-3" style="background: var(--primary); color: var(--primary-foreground);">
-        <p class="font-medium text-sm truncate" id="chat-widget-titulo">Chat</p>
-        <button type="button" onclick="minimizarChatFlotante()" class="p-1 hover:opacity-80" aria-label="Minimizar chat">
-          <i data-lucide="minus" class="w-4 h-4"></i>
-        </button>
+  <!-- Chat flotante -->
+  <div id="chat-widget" data-rol="TECNICO" style="position:fixed; right:16px; bottom:16px; z-index:60; display:flex; flex-direction:column; align-items:flex-end; gap:10px;">
+    <div id="chat-panel" style="display:none; width:340px; max-width:calc(100vw - 32px); background:#fff; border:1px solid #cfd6e2; border-radius:16px; box-shadow:0 12px 32px rgba(16,24,40,.22); overflow:hidden;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:12px 14px; background:var(--primary); color:#fff;">
+        <strong id="chat-titulo" style="font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Chat</strong>
+        <span style="display:flex; gap:4px;">
+          <button type="button" id="chat-minimizar" aria-label="Minimizar" title="Minimizar" style="background:none;border:none;color:#fff;font-size:20px;line-height:1;padding:2px 8px;cursor:pointer;">–</button>
+          <button type="button" id="chat-cerrar" aria-label="Cerrar chat" title="Cerrar" style="background:none;border:none;color:#fff;font-size:20px;line-height:1;padding:2px 8px;cursor:pointer;">×</button>
+        </span>
       </div>
-      <div id="chat-widget-mensajes" class="p-3 overflow-y-auto" style="height: 300px; background:#f8fafc;"></div>
-      <div class="flex gap-2 p-3 border-t" style="border-color: var(--border);">
-        <input type="text" id="chat-widget-input"
-               placeholder="Escribe un mensaje..."
-               class="flex-1 border rounded-lg p-2 text-sm" style="border-color: var(--border);" />
-        <button type="button" class="btn-primary btn-sm" onclick="enviarMensajeChatFlotante()">
-          Enviar
-        </button>
+      <div id="chat-mensajes" style="height:min(360px, 52vh); overflow-y:auto; padding:12px; background:#f1f5f9;"></div>
+      <div id="chat-aviso" style="display:none; padding:6px 12px; font-size:12px; background:#fee2e2; color:#991b1b;"></div>
+      <div style="display:flex; gap:8px; align-items:flex-end; padding:10px; border-top:1px solid #e2e8f0; background:#fff;">
+        <textarea id="chat-entrada" rows="1" maxlength="1000" placeholder="Escribe un mensaje…"
+                  style="flex:1; resize:none; border:1px solid #cbd5e1; border-radius:12px; padding:8px 10px; font-size:14px; max-height:96px; outline:none;"></textarea>
+        <button type="button" id="chat-enviar" class="btn-primary btn-sm" style="min-height:38px;">Enviar</button>
       </div>
     </div>
-
-    <button type="button" id="chat-widget-burbuja" onclick="toggleChatFlotante()"
-            class="hidden rounded-full shadow-lg items-center justify-center"
-            style="width:56px; height:56px; background: var(--primary); color: var(--primary-foreground); display:flex;">
+    <button type="button" id="chat-burbuja" aria-label="Abrir chat"
+            style="display:none; position:relative; width:56px; height:56px; border-radius:9999px; background:var(--primary); color:#fff; border:none; box-shadow:0 8px 20px rgba(16,24,40,.3); align-items:center; justify-content:center; font-size:24px; cursor:pointer;">
       💬
+      <span id="chat-badge" style="display:none; position:absolute; top:-4px; right:-4px; min-width:20px; height:20px; padding:0 5px; border-radius:9999px; background:#dc2626; color:#fff; font-size:12px; font-weight:600; line-height:20px; text-align:center;">0</span>
     </button>
   </div>
+  <script src="/js/chat.js"></script>
 
   <!-- Terminar servicio: mano de obra + materiales con comprobante -->
   <div id="modal-terminar" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:300; align-items:flex-start; justify-content:center; padding:16px; overflow-y:auto;">

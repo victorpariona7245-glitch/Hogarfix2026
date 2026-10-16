@@ -86,10 +86,10 @@ public class MensajeController {
                 String cat = servicio.getCategoria() != null ? servicio.getCategoria().getNombre() : "servicio";
                 if (autor == Mensaje.Autor.CLIENTE && servicio.getTecnico() != null) {
                     notificacionService.crearSiNoHayPendiente(servicio.getTecnico().getUsuario(), "MENSAJE",
-                            "Nuevo mensaje del cliente (" + cat + ")", "/tecnicos/panel", servicio.getIdServicio());
+                            "Nuevo mensaje del cliente (" + cat + ")", "/tecnicos/panel?chat=" + servicio.getIdServicio(), servicio.getIdServicio());
                 } else if (autor == Mensaje.Autor.TECNICO && servicio.getCliente() != null) {
                     notificacionService.crearSiNoHayPendiente(servicio.getCliente().getUsuario(), "MENSAJE",
-                            "Nuevo mensaje de tu técnico (" + cat + ")", "/clientes/perfil", servicio.getIdServicio());
+                            "Nuevo mensaje de tu técnico (" + cat + ")", "/clientes/perfil?chat=" + servicio.getIdServicio(), servicio.getIdServicio());
                 }
             } catch (Exception ignored) {
             }
