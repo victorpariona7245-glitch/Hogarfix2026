@@ -217,6 +217,32 @@ public class AdminUsuariosController {
         return "redirect:/admin/administradores";
     }
 
+    /** El administrador principal cambia su propia contraseña. */
+    @PostMapping("/mi-clave")
+    public String cambiarMiClave(@RequestParam(defaultValue = "") String actual,
+            @RequestParam(defaultValue = "") String nueva,
+            @RequestParam(defaultValue = "") String repetir,
+            Principal principal, RedirectAttributes ra) {
+        if (principal == null) return "redirect:/auth/login";
+        var yo = usuarioPrincipal(principal);
+        if (yo.isEmpty()) return "redirect:/admin/dashboard";
+        if (!passwordEncoder.matches(actual, yo.get().getPassword())) {
+            ra.addFlashAttribute("mensajeError", "Tu contraseña actual es incorrecta.");
+        } else if (nueva.length() < 10) {
+            ra.addFlashAttribute("mensajeError", "La nueva contraseña debe tener al menos 10 caracteres.");
+        } else if (!nueva.equals(repetir)) {
+            ra.addFlashAttribute("mensajeError", "Las contraseñas nuevas no coinciden.");
+        } else if (nueva.equals(actual)) {
+            ra.addFlashAttribute("mensajeError", "La nueva contraseña debe ser distinta de la actual.");
+        } else {
+            yo.get().setPassword(passwordEncoder.encode(nueva));
+            usuarioRepository.save(yo.get());
+            auditoriaService.registrar(principal.getName(), "Contraseña cambiada", "El administrador principal cambió su contraseña");
+            ra.addFlashAttribute("mensajeExito", "Contraseña actualizada.");
+        }
+        return "redirect:/admin/administradores";
+    }
+
     @PostMapping("/{id}/eliminar")
     public String eliminar(@PathVariable Long id,
             @RequestParam(defaultValue = "") String passwordPrincipal,

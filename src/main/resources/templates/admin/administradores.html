@@ -20,6 +20,26 @@
         <span th:text="${mensajeError}">Error</span>
       </div>
 
+      <form th:action="@{/admin/administradores/mi-clave}" method="post" class="card mb-6" autocomplete="off">
+        <h3 class="text-sm font-medium mb-3 text-primary">Mi contraseña</h3>
+        <div class="grid md:grid-cols-3 gap-4">
+          <div>
+            <label class="form-label" for="mc-actual">Contraseña actual</label>
+            <input type="password" id="mc-actual" name="actual" required class="form-input" autocomplete="current-password" />
+          </div>
+          <div>
+            <label class="form-label" for="mc-nueva">Nueva contraseña</label>
+            <input type="password" id="mc-nueva" name="nueva" minlength="10" maxlength="100" required class="form-input" autocomplete="new-password" />
+            <p class="form-hint">Mínimo 10 caracteres</p>
+          </div>
+          <div>
+            <label class="form-label" for="mc-repetir">Repetir nueva</label>
+            <input type="password" id="mc-repetir" name="repetir" minlength="10" maxlength="100" required class="form-input" autocomplete="new-password" />
+          </div>
+        </div>
+        <button type="submit" class="btn-primary mt-4">Cambiar mi contraseña</button>
+      </form>
+
       <form th:action="@{/admin/administradores}" method="post" class="card mb-6" autocomplete="off">
         <h3 class="text-sm font-medium mb-3 text-primary">Nuevo administrador</h3>
         <div class="grid md:grid-cols-2 gap-4">

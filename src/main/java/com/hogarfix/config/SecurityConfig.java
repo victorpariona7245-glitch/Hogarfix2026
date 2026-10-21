@@ -3,25 +3,25 @@ package com.hogarfix.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
-import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 @Configuration
 public class SecurityConfig {
 
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-                // Carga el token CSRF al inicio de la petición (no mientras se renderiza la página).
-                // Evita "Cannot create a session after the response has been committed"
-                // en páginas largas cuando el visitante aún no tiene sesión.
-                CsrfTokenRequestAttributeHandler csrfHandler = new CsrfTokenRequestAttributeHandler();
-                csrfHandler.setCsrfRequestAttributeName(null);
-
                 http
                                 .headers(headers -> headers
-                                                .frameOptions(frame -> frame.sameOrigin()))
+                                                .frameOptions(frame -> frame.sameOrigin())
+                                                // no filtrar la URL completa a otros sitios
+                                                .referrerPolicy(r -> r.policy(
+                                                                org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                                                // la web no necesita cámara, micrófono ni ubicación
+                                                .permissionsPolicyHeader(p -> p
+                                                                .policy("camera=(), microphone=(), geolocation=()")))
                                 .authorizeHttpRequests(auth -> auth
                                                 // recursos públicos y páginas de autenticación/registro
                                                 .requestMatchers(
@@ -71,8 +71,8 @@ public class SecurityConfig {
                                                 .logoutUrl("/logout")
                                                 .logoutSuccessUrl("/auth/login?logout")
                                                 .permitAll())
-                                // CSRF activo, con el token cargado al inicio de la petición
-                                .csrf(csrf -> csrf.csrfTokenRequestHandler(csrfHandler));
+                                // CSRF activo (por defecto)
+                                .csrf(Customizer.withDefaults());
 
                 return http.build();
         }

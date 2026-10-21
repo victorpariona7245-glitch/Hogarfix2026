@@ -36,6 +36,8 @@
   <a th:href="@{/admin/administradores}"
      th:if="${session.usuarioActual != null and session.usuarioActual.email == (#strings.isEmpty(@environment.getProperty('app.admin.email')) ? 'admin@example.com' : @environment.getProperty('app.admin.email'))}"
      th:classappend="${activo == 'administradores'} ? 'active'">Administradores</a>
+  <a th:href="@{/admin/respaldo}" th:if="${esAdminPrincipal != null and esAdminPrincipal}"
+     th:classappend="${activo == 'respaldo'} ? 'active'">Respaldo</a>
   <a th:href="@{/admin/actividad}" th:if="${permisosAdmin == null or permisosAdmin.contains('*') or permisosAdmin.contains('actividad')}" th:classappend="${activo == 'actividad'} ? 'active'">Actividad</a>
   <a th:href="@{/admin/pagos}" th:if="${permisosAdmin == null or permisosAdmin.contains('*') or permisosAdmin.contains('pagos')}" th:classappend="${activo == 'pagos'} ? 'active'">Pagos</a>
   <a th:href="@{/admin/comisiones}" th:if="${permisosAdmin == null or permisosAdmin.contains('*') or permisosAdmin.contains('comisiones')}" th:classappend="${activo == 'comisiones'} ? 'active'">Cobros y comisiones</a>

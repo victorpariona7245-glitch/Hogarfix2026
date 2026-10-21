@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Respaldo')}"></head>
+<body style="background-color: rgba(236,236,240,0.25);">
+  <header th:replace="~{fragments/navbar :: navbar}"></header>
+  <aside th:replace="~{fragments/admin-sidebar :: sidebar('respaldo')}"></aside>
+
+  <div class="min-h-screen flex flex-col admin-main">
+    <main class="flex-1 container mx-auto px-4 py-10" style="max-width: 760px;">
+      <h2 class="text-2xl font-medium mb-2">Respaldo de datos</h2>
+      <p class="text-sm mb-6" style="color: var(--muted-foreground);">
+        Descarga una copia de todos los datos de HogarFix (clientes, técnicos, servicios, pagos, boletas, chat, comprobantes…).
+        Hazlo cada semana y guárdalo fuera de Railway y de Aiven.
+      </p>
+
+      <div th:if="${param.error != null}" class="text-sm mb-4 p-3 rounded-lg" style="background:#fee2e2; color:#991b1b;">
+        Contraseña incorrecta.
+      </div>
+      <div th:if="${mensajeError}" class="text-sm mb-4 p-3 rounded-lg" style="background:#fee2e2; color:#991b1b;" th:text="${mensajeError}"></div>
+
+      <form th:action="@{/admin/respaldo/descargar}" method="post" class="card mb-6" autocomplete="off">
+        <label class="form-label" for="password">Tu contraseña de administrador principal</label>
+        <input type="password" id="password" name="password" required class="form-input" autocomplete="new-password" />
+        <button type="submit" class="btn-primary mt-4">Descargar respaldo (.zip)</button>
+        <p class="form-hint mt-2">Puede tardar unos segundos. Cada descarga queda registrada en Actividad.</p>
+      </form>
+
+      <div class="card text-sm space-y-3">
+        <h3 class="font-medium">Cuidados</h3>
+        <ul class="list-disc pl-5 space-y-1" style="color: var(--muted-foreground);">
+          <li>El archivo tiene datos personales y contraseñas cifradas: no lo envíes por WhatsApp ni lo subas a lugares públicos.</li>
+          <li>Guárdalo en tu computadora y en un segundo lugar privado (por ejemplo tu Google Drive personal).</li>
+          <li>Se guardan los <strong>datos</strong>. Las tablas las vuelve a crear la aplicación sola al arrancar.</li>
+        </ul>
+        <h3 class="font-medium pt-2">Cómo restaurarlo</h3>
+        <ol class="list-decimal pl-5 space-y-1" style="color: var(--muted-foreground);">
+          <li>Arranca la aplicación una vez con la base de datos nueva y vacía (así se crean las tablas).</li>
+          <li>Descomprime el .zip y ejecuta el archivo <code>respaldo-hogarfix.sql</code> contra esa base de datos (por ejemplo con MySQL Workbench o <code>mysql</code>).</li>
+          <li>Si salen errores de filas repetidas, es porque la base ya tenía datos: vacía las tablas primero.</li>
+        </ol>
+      </div>
+    </main>
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+  </div>
+</body>
+</html>
